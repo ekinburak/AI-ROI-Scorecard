@@ -1,0 +1,1229 @@
+{
+  "$defs": {
+    "ApprovalRequestedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "approvalId": {
+          "minLength": 1,
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "category": {
+          "minLength": 1,
+          "title": "Category",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "approval_requested",
+          "default": "approval_requested",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "approvalId",
+        "category"
+      ],
+      "title": "ApprovalRequestedEvent",
+      "type": "object"
+    },
+    "AttemptFinishedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "activeDurationMs": {
+          "minimum": 0,
+          "title": "Activedurationms",
+          "type": "integer"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "status": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled",
+            "abandoned"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "type": {
+          "const": "attempt_finished",
+          "default": "attempt_finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "status",
+        "activeDurationMs"
+      ],
+      "title": "AttemptFinishedEvent",
+      "type": "object"
+    },
+    "AttemptStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "attempt_started",
+          "default": "attempt_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt"
+      ],
+      "title": "AttemptStartedEvent",
+      "type": "object"
+    },
+    "CorrectionAppendedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "action": {
+          "const": "void",
+          "default": "void",
+          "title": "Action",
+          "type": "string"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 280,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "targetEventId": {
+          "minLength": 1,
+          "title": "Targeteventid",
+          "type": "string"
+        },
+        "type": {
+          "const": "correction_appended",
+          "default": "correction_appended",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "targetEventId",
+        "reason"
+      ],
+      "title": "CorrectionAppendedEvent",
+      "type": "object"
+    },
+    "EstimateInput": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "default": "illustrative",
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "generatedAt": {
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "locale": {
+          "default": "en",
+          "minLength": 2,
+          "title": "Locale",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "#/$defs/ReportPeriod"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationContext"
+        },
+        "workflows": {
+          "items": {
+            "$ref": "#/$defs/EstimateWorkflow"
+          },
+          "title": "Workflows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "period",
+        "generatedAt",
+        "workflows",
+        "valuation"
+      ],
+      "title": "EstimateInput",
+      "type": "object"
+    },
+    "EstimateWorkflow": {
+      "additionalProperties": false,
+      "properties": {
+        "aiDurationMs": {
+          "minimum": 0,
+          "title": "Aidurationms",
+          "type": "integer"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "manualMinutes": {
+          "minimum": 0,
+          "title": "Manualminutes",
+          "type": "integer"
+        },
+        "units": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "title": "Units",
+          "type": "integer"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowKey",
+        "label",
+        "manualMinutes",
+        "aiDurationMs"
+      ],
+      "title": "EstimateWorkflow",
+      "type": "object"
+    },
+    "ExceptionRecordedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "category": {
+          "minLength": 1,
+          "title": "Category",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "exceptionId": {
+          "minLength": 1,
+          "title": "Exceptionid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "safeMessage": {
+          "anyOf": [
+            {
+              "maxLength": 280,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Safemessage"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "exception_recorded",
+          "default": "exception_recorded",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "exceptionId",
+        "category"
+      ],
+      "title": "ExceptionRecordedEvent",
+      "type": "object"
+    },
+    "GenerationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "events": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "approval_requested": "#/$defs/ApprovalRequestedEvent",
+                "attempt_finished": "#/$defs/AttemptFinishedEvent",
+                "attempt_started": "#/$defs/AttemptStartedEvent",
+                "correction_appended": "#/$defs/CorrectionAppendedEvent",
+                "exception_recorded": "#/$defs/ExceptionRecordedEvent",
+                "outcome_completed": "#/$defs/OutcomeCompletedEvent",
+                "resolution_recorded": "#/$defs/ResolutionRecordedEvent"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/AttemptStartedEvent"
+              },
+              {
+                "$ref": "#/$defs/AttemptFinishedEvent"
+              },
+              {
+                "$ref": "#/$defs/OutcomeCompletedEvent"
+              },
+              {
+                "$ref": "#/$defs/ExceptionRecordedEvent"
+              },
+              {
+                "$ref": "#/$defs/ApprovalRequestedEvent"
+              },
+              {
+                "$ref": "#/$defs/ResolutionRecordedEvent"
+              },
+              {
+                "$ref": "#/$defs/CorrectionAppendedEvent"
+              }
+            ]
+          },
+          "title": "Events",
+          "type": "array"
+        },
+        "evidenceWatermark": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidencewatermark"
+        },
+        "generatedAt": {
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "locale": {
+          "default": "en",
+          "minLength": 2,
+          "title": "Locale",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "#/$defs/ReportPeriod"
+        },
+        "policies": {
+          "items": {
+            "$ref": "#/$defs/ValuePolicy"
+          },
+          "title": "Policies",
+          "type": "array"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationContext"
+        }
+      },
+      "required": [
+        "accountId",
+        "period",
+        "generatedAt",
+        "events",
+        "policies",
+        "valuation"
+      ],
+      "title": "GenerationInput",
+      "type": "object"
+    },
+    "LocalizedLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "minLength": 1,
+          "title": "Default",
+          "type": "string"
+        },
+        "translations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Translations",
+          "type": "object"
+        }
+      },
+      "required": [
+        "default"
+      ],
+      "title": "LocalizedLabel",
+      "type": "object"
+    },
+    "OutcomeCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "outcomeId": {
+          "minLength": 1,
+          "title": "Outcomeid",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "outcome_completed",
+          "default": "outcome_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "units": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "title": "Units",
+          "type": "integer"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "outcomeId"
+      ],
+      "title": "OutcomeCompletedEvent",
+      "type": "object"
+    },
+    "ReportPeriod": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "ReportPeriod",
+      "type": "object"
+    },
+    "ResolutionRecordedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "exceptionId": {
+          "minLength": 1,
+          "title": "Exceptionid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "resolution": {
+          "maxLength": 280,
+          "minLength": 1,
+          "title": "Resolution",
+          "type": "string"
+        },
+        "runId": {
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "resolution_recorded",
+          "default": "resolution_recorded",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "exceptionId",
+        "resolution"
+      ],
+      "title": "ResolutionRecordedEvent",
+      "type": "object"
+    },
+    "ScorecardLineItem": {
+      "additionalProperties": false,
+      "properties": {
+        "aiDurationMs": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Aidurationms",
+          "type": "string"
+        },
+        "estimatedValueMinor": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Estimatedvalueminor",
+          "type": "string"
+        },
+        "evidenceLevel": {
+          "enum": [
+            "measured",
+            "approved_baseline",
+            "illustrative"
+          ],
+          "title": "Evidencelevel",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "manualMinutes": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Manualminutes",
+          "type": "string"
+        },
+        "policyKey": {
+          "title": "Policykey",
+          "type": "string"
+        },
+        "policyVersion": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Policyversion"
+        },
+        "units": {
+          "minimum": 0,
+          "title": "Units",
+          "type": "integer"
+        },
+        "workflowKey": {
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowKey",
+        "policyKey",
+        "policyVersion",
+        "label",
+        "units",
+        "manualMinutes",
+        "aiDurationMs",
+        "estimatedValueMinor",
+        "evidenceLevel"
+      ],
+      "title": "ScorecardLineItem",
+      "type": "object"
+    },
+    "ScorecardSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "title": "Accountid",
+          "type": "string"
+        },
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "currencyMinorUnitScale": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Currencyminorunitscale",
+          "type": "integer"
+        },
+        "evidenceIssues": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidenceissues",
+          "type": "array"
+        },
+        "evidenceWatermark": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidencewatermark"
+        },
+        "generatedAt": {
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "lineItems": {
+          "items": {
+            "$ref": "#/$defs/ScorecardLineItem"
+          },
+          "title": "Lineitems",
+          "type": "array"
+        },
+        "locale": {
+          "title": "Locale",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "audited",
+            "illustrative"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "#/$defs/ReportPeriod"
+        },
+        "schemaVersion": {
+          "const": 1,
+          "default": 1,
+          "title": "Schemaversion",
+          "type": "integer"
+        },
+        "snapshotHash": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Snapshothash",
+          "type": "string"
+        },
+        "sourceFingerprint": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Sourcefingerprint",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "send_not_recommended",
+            "needs_attention"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "totals": {
+          "$ref": "#/$defs/ScorecardTotals"
+        }
+      },
+      "required": [
+        "mode",
+        "accountId",
+        "locale",
+        "period",
+        "generatedAt",
+        "currency",
+        "currencyMinorUnitScale",
+        "status",
+        "lineItems",
+        "totals",
+        "evidenceIssues",
+        "sourceFingerprint",
+        "snapshotHash"
+      ],
+      "title": "ScorecardSnapshot",
+      "type": "object"
+    },
+    "ScorecardTotals": {
+      "additionalProperties": false,
+      "properties": {
+        "aiDurationMs": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Aidurationms",
+          "type": "string"
+        },
+        "approvalsRequested": {
+          "minimum": 0,
+          "title": "Approvalsrequested",
+          "type": "integer"
+        },
+        "completedOutcomes": {
+          "minimum": 0,
+          "title": "Completedoutcomes",
+          "type": "integer"
+        },
+        "estimatedValueMinor": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Estimatedvalueminor",
+          "type": "string"
+        },
+        "exceptions": {
+          "minimum": 0,
+          "title": "Exceptions",
+          "type": "integer"
+        },
+        "manualMinutes": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Manualminutes",
+          "type": "string"
+        },
+        "netValueMinor": {
+          "anyOf": [
+            {
+              "pattern": "^-?(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Netvalueminor"
+        },
+        "roiBasisPoints": {
+          "anyOf": [
+            {
+              "pattern": "^-?(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Roibasispoints"
+        },
+        "serviceCostMinor": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Servicecostminor"
+        },
+        "timeSavedMs": {
+          "pattern": "^-?(0|[1-9]\\d*)$",
+          "title": "Timesavedms",
+          "type": "string"
+        },
+        "unresolvedExceptions": {
+          "minimum": 0,
+          "title": "Unresolvedexceptions",
+          "type": "integer"
+        },
+        "valueToCostBasisPoints": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuetocostbasispoints"
+        }
+      },
+      "required": [
+        "completedOutcomes",
+        "manualMinutes",
+        "aiDurationMs",
+        "timeSavedMs",
+        "estimatedValueMinor",
+        "exceptions",
+        "unresolvedExceptions",
+        "approvalsRequested"
+      ],
+      "title": "ScorecardTotals",
+      "type": "object"
+    },
+    "ValuationContext": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "currencyMinorUnitScale": {
+          "default": 2,
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Currencyminorunitscale",
+          "type": "integer"
+        },
+        "hourlyValueMinor": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Hourlyvalueminor",
+          "type": "string"
+        },
+        "serviceCostMinor": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Servicecostminor"
+        }
+      },
+      "required": [
+        "currency",
+        "hourlyValueMinor"
+      ],
+      "title": "ValuationContext",
+      "type": "object"
+    },
+    "ValuePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accountid"
+        },
+        "effectiveFrom": {
+          "title": "Effectivefrom",
+          "type": "string"
+        },
+        "effectiveTo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effectiveto"
+        },
+        "evidenceLevel": {
+          "enum": [
+            "measured",
+            "approved_baseline"
+          ],
+          "title": "Evidencelevel",
+          "type": "string"
+        },
+        "label": {
+          "$ref": "#/$defs/LocalizedLabel"
+        },
+        "manualMinutesPerUnit": {
+          "minimum": 0,
+          "title": "Manualminutesperunit",
+          "type": "integer"
+        },
+        "policyKey": {
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "default",
+            "account"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "version": {
+          "exclusiveMinimum": 0,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "policyKey",
+        "version",
+        "scope",
+        "label",
+        "manualMinutesPerUnit",
+        "evidenceLevel",
+        "effectiveFrom"
+      ],
+      "title": "ValuePolicy",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/ekinburak/AI-ROI-Scorecard/schema/scorecard-v1.schema.json",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GenerationInput"
+    },
+    {
+      "$ref": "#/$defs/EstimateInput"
+    },
+    {
+      "$ref": "#/$defs/ScorecardSnapshot"
+    }
+  ],
+  "title": "AI ROI Scorecard schema v1"
+}

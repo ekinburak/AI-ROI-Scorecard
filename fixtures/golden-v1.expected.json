@@ -1,0 +1,56 @@
+{
+  "accountId": "demo-account",
+  "currency": "USD",
+  "currencyMinorUnitScale": 2,
+  "evidenceIssues": [],
+  "evidenceWatermark": "13",
+  "generatedAt": "2026-08-28T08:00:00.000Z",
+  "lineItems": [
+    {
+      "aiDurationMs": "2300",
+      "estimatedValueMinor": "12500",
+      "evidenceLevel": "measured",
+      "label": "Customer reply drafting",
+      "manualMinutes": "75",
+      "policyKey": "reply-draft",
+      "policyVersion": 2,
+      "units": 1,
+      "workflowKey": "reply-draft"
+    },
+    {
+      "aiDurationMs": "1200",
+      "estimatedValueMinor": "15000",
+      "evidenceLevel": "approved_baseline",
+      "label": "Support ticket triage",
+      "manualMinutes": "90",
+      "policyKey": "ticket-triage",
+      "policyVersion": 1,
+      "units": 2,
+      "workflowKey": "ticket-triage"
+    }
+  ],
+  "locale": "en",
+  "mode": "audited",
+  "period": {
+    "end": "2026-08-28T00:00:00.000Z",
+    "start": "2026-08-21T00:00:00.000Z"
+  },
+  "schemaVersion": 1,
+  "snapshotHash": "d2c1b41450293ffccce6507d7a82808d1525c49c4b1392d6d911823c70cc8603",
+  "sourceFingerprint": "80e210a27dec26b89b7a72275140fa1769a4c0e9e906660a6c76e2ba2f8a7dfb",
+  "status": "ready",
+  "totals": {
+    "aiDurationMs": "3500",
+    "approvalsRequested": 1,
+    "completedOutcomes": 3,
+    "estimatedValueMinor": "27500",
+    "exceptions": 1,
+    "manualMinutes": "165",
+    "netValueMinor": "2500",
+    "roiBasisPoints": "1000",
+    "serviceCostMinor": "25000",
+    "timeSavedMs": "9896500",
+    "unresolvedExceptions": 0,
+    "valueToCostBasisPoints": "11000"
+  }
+}

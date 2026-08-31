@@ -1,0 +1,10 @@
+python/
+tests/
+examples/
+docs/
+scripts/
+.github/
+.changeset/
+fixtures/
+*.config.*
+tsconfig.json

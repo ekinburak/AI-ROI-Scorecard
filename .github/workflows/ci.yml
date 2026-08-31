@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm check:versions
+      - run: node examples/typescript/support-automation.mjs > /dev/null
+
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - working-directory: python
+        run: uv sync --all-extras --frozen
+      - working-directory: python
+        run: uv run ruff check src tests
+      - working-directory: python
+        run: uv run mypy src
+      - working-directory: python
+        run: uv run pytest
+      - working-directory: python
+        run: uv run python ../scripts/export_schema.py --check
+      - working-directory: python
+        run: uv run python ../examples/python/support_automation.py > /dev/null
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: scorecard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_POSTGRES_URL: postgresql://postgres:postgres@127.0.0.1:5432/scorecard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:postgres
+      - working-directory: python
+        run: uv sync --all-extras --frozen
+      - working-directory: python
+        run: uv run pytest tests/test_postgres.py
+
+  packages-and-boundary:
+    runs-on: ubuntu-latest
+    env:
+      PRIVATE_BOUNDARY_TERMS: ${{ secrets.PRIVATE_BOUNDARY_TERMS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:boundary
+      - run: pnpm pack --pack-destination artifacts
+      - working-directory: python
+        run: uv build --out-dir ../artifacts
+      - run: |
+          mkdir -p /tmp/npm-package /tmp/python-package
+          tar -xzf artifacts/*.tgz -C /tmp/npm-package
+          python -m zipfile -e artifacts/*.whl /tmp/python-package
+          node scripts/check-public-boundary.mjs /tmp/npm-package /tmp/python-package
+      - run: |
+          mkdir -p /tmp/npm-smoke
+          cd /tmp/npm-smoke
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE"/artifacts/*.tgz >/dev/null
+          node --input-type=module -e "import { estimateScorecard } from 'ai-roi-scorecard'; const result = estimateScorecard({ period: { start: '2026-01-01T00:00:00Z', end: '2026-01-08T00:00:00Z' }, generatedAt: '2026-01-08T00:00:00Z', workflows: [], valuation: { currency: 'USD', hourlyValueMinor: '0' } }); if (result.schemaVersion !== 1) process.exit(1)"
+      - run: |
+          uv venv /tmp/python-smoke
+          uv pip install --python /tmp/python-smoke/bin/python artifacts/*.whl
+          /tmp/python-smoke/bin/python -c "from ai_roi_scorecard import estimate_scorecard; result = estimate_scorecard({'period': {'start': '2026-01-01T00:00:00Z', 'end': '2026-01-08T00:00:00Z'}, 'generatedAt': '2026-01-08T00:00:00Z', 'workflows': [], 'valuation': {'currency': 'USD', 'hourlyValueMinor': '0'}}); assert result.schema_version == 1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: artifacts/
+
+  ci-complete:
+    if: always()
+    needs: [typescript, python, postgres, packages-and-boundary]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          test "${{ needs.typescript.result }}" = success
+          test "${{ needs.python.result }}" = success
+          test "${{ needs.postgres.result }}" = success
+          test "${{ needs.packages-and-boundary.result }}" = success

@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-roi-scorecard"
+version = "0.1.0"
+description = "Provider-neutral SDK for auditable AI value scorecards."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Ekin Burak Ozturk" }]
+keywords = ["ai", "roi", "scorecard", "automation", "evidence"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = ["pydantic>=2.8,<3"]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.2,<4"]
+dev = [
+  "mypy>=1.17",
+  "psycopg[binary]>=3.2,<4",
+  "pytest>=8.4",
+  "pytest-asyncio>=1.1",
+  "ruff>=0.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/ekinburak/AI-ROI-Scorecard"
+Repository = "https://github.com/ekinburak/AI-ROI-Scorecard"
+Issues = "https://github.com/ekinburak/AI-ROI-Scorecard/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_roi_scorecard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "E731"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+packages = ["ai_roi_scorecard"]
+
+[tool.uv]
+package = true

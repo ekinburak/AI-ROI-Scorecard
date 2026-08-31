@@ -1,0 +1,194 @@
+{
+  "accountId": "demo-account",
+  "locale": "en",
+  "period": {
+    "start": "2026-08-21T00:00:00.000Z",
+    "end": "2026-08-28T00:00:00.000Z"
+  },
+  "generatedAt": "2026-08-28T08:00:00.000Z",
+  "evidenceWatermark": "13",
+  "valuation": {
+    "currency": "USD",
+    "currencyMinorUnitScale": 2,
+    "hourlyValueMinor": "10000",
+    "serviceCostMinor": "25000"
+  },
+  "policies": [
+    {
+      "policyKey": "ticket-triage",
+      "version": 1,
+      "scope": "default",
+      "label": {
+        "default": "Support ticket triage",
+        "translations": {}
+      },
+      "manualMinutesPerUnit": 45,
+      "evidenceLevel": "approved_baseline",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "policyKey": "reply-draft",
+      "version": 1,
+      "scope": "default",
+      "label": {
+        "default": "Customer reply drafting",
+        "translations": {}
+      },
+      "manualMinutesPerUnit": 60,
+      "evidenceLevel": "approved_baseline",
+      "effectiveFrom": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "policyKey": "reply-draft",
+      "version": 2,
+      "scope": "account",
+      "accountId": "demo-account",
+      "label": {
+        "default": "Customer reply drafting",
+        "translations": {}
+      },
+      "manualMinutesPerUnit": 75,
+      "evidenceLevel": "measured",
+      "effectiveFrom": "2026-08-01T00:00:00.000Z"
+    }
+  ],
+  "events": [
+    {
+      "type": "attempt_started",
+      "eventId": "event-01",
+      "accountId": "demo-account",
+      "runId": "run-triage",
+      "attemptId": "attempt-triage",
+      "workflowKey": "ticket-triage",
+      "policyKey": "ticket-triage",
+      "occurredAt": "2026-08-22T10:00:00.000Z",
+      "sequence": "1"
+    },
+    {
+      "type": "attempt_finished",
+      "eventId": "event-02",
+      "accountId": "demo-account",
+      "runId": "run-triage",
+      "attemptId": "attempt-triage",
+      "workflowKey": "ticket-triage",
+      "policyKey": "ticket-triage",
+      "occurredAt": "2026-08-22T10:00:01.200Z",
+      "sequence": "2",
+      "status": "succeeded",
+      "activeDurationMs": 1200
+    },
+    {
+      "type": "outcome_completed",
+      "eventId": "event-03",
+      "accountId": "demo-account",
+      "runId": "run-triage",
+      "attemptId": "attempt-triage",
+      "workflowKey": "ticket-triage",
+      "policyKey": "ticket-triage",
+      "occurredAt": "2026-08-22T10:00:01.200Z",
+      "sequence": "3",
+      "outcomeId": "outcome-triage",
+      "units": 2
+    },
+    {
+      "type": "attempt_started",
+      "eventId": "event-04",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-1",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:00:00.000Z",
+      "sequence": "4"
+    },
+    {
+      "type": "attempt_finished",
+      "eventId": "event-05",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-1",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:00:00.500Z",
+      "sequence": "5",
+      "status": "failed",
+      "activeDurationMs": 500
+    },
+    {
+      "type": "exception_recorded",
+      "eventId": "event-06",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-1",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:00:00.500Z",
+      "sequence": "6",
+      "exceptionId": "exception-timeout",
+      "category": "Timeout"
+    },
+    {
+      "type": "attempt_started",
+      "eventId": "event-07",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-2",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:02:00.000Z",
+      "sequence": "7"
+    },
+    {
+      "type": "attempt_finished",
+      "eventId": "event-08",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-2",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:02:01.800Z",
+      "sequence": "8",
+      "status": "succeeded",
+      "activeDurationMs": 1800
+    },
+    {
+      "type": "outcome_completed",
+      "eventId": "event-09",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-2",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:02:01.800Z",
+      "sequence": "9",
+      "outcomeId": "outcome-reply",
+      "units": 1
+    },
+    {
+      "type": "resolution_recorded",
+      "eventId": "event-10",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-2",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:03:00.000Z",
+      "sequence": "10",
+      "exceptionId": "exception-timeout",
+      "resolution": "Retry completed successfully"
+    },
+    {
+      "type": "approval_requested",
+      "eventId": "event-11",
+      "accountId": "demo-account",
+      "runId": "run-reply",
+      "attemptId": "attempt-reply-2",
+      "workflowKey": "reply-draft",
+      "policyKey": "reply-draft",
+      "occurredAt": "2026-08-23T11:04:00.000Z",
+      "sequence": "11",
+      "approvalId": "approval-quality",
+      "category": "Quality review"
+    }
+  ]
+}
