@@ -10,6 +10,9 @@
 The renderer accepts an immutable snapshot plus presentation-only options such as account display
 name, locale, and title. It never recalculates value.
 
+Runtime labels follow the snapshot's measurement state. An illustrative estimate without runtime
+evidence says `Not measured` and withholds the time difference until instrumentation is connected.
+
 ```ts
 const artifact = renderReport(snapshot, {
   accountName: "Example team",

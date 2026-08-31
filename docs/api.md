@@ -34,3 +34,8 @@ Python exports the repository protocol and both adapters from `ai_roi_scorecard`
 Both packages expose evidence event variants, localized value policies, valuation context, report
 periods, generation input, estimate input, line items, totals, and immutable snapshots. JSON uses
 camelCase in both languages; Python models accept and expose idiomatic snake_case attributes.
+
+Illustrative workflows may supply `valueGroupKey`, `valueGroupLabel`, and an
+`hourlyValueMinor` override. They may omit `aiDurationMs` when no measured runtime exists. The
+result then records `runtimeMeasurement` as `not_provided` instead of presenting zero as a
+measurement. These estimate-only fields never attach monetary values to instrumentation tags.

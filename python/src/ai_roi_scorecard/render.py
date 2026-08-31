@@ -49,6 +49,17 @@ def _period(snapshot: ScorecardSnapshot) -> str:
     return f"{start} – {end}"
 
 
+def _runtime_summary(snapshot: ScorecardSnapshot) -> tuple[str, str]:
+    if snapshot.runtime_measurement == "measured":
+        return (
+            _duration(snapshot.totals.ai_duration_ms),
+            _duration(snapshot.totals.time_saved_ms),
+        )
+    if snapshot.runtime_measurement == "partial":
+        return "Partially measured", "Available after complete instrumentation"
+    return "Not measured", "Available after instrumentation"
+
+
 def render_text_report(
     snapshot: ScorecardSnapshot, options: ReportOptions | None = None
 ) -> str:
@@ -58,6 +69,7 @@ def render_text_report(
     title = options.title or "Weekly AI value scorecard"
     account = options.account_name or snapshot.account_id
     mode = "Illustrative estimate" if snapshot.mode == "illustrative" else "Evidence-backed report"
+    ai_runtime, time_difference = _runtime_summary(snapshot)
     lines = [
         title,
         f"{account} · {_period(snapshot)}",
@@ -65,8 +77,8 @@ def render_text_report(
         "",
         f"Estimated value: {money(snapshot.totals.estimated_value_minor)}",
         f"Manual time: {_duration(str(int(snapshot.totals.manual_minutes) * 60_000))}",
-        f"AI runtime: {_duration(snapshot.totals.ai_duration_ms)}",
-        f"Time difference: {_duration(snapshot.totals.time_saved_ms)}",
+        f"AI runtime: {ai_runtime}",
+        f"Time difference: {time_difference}",
     ]
     if snapshot.totals.service_cost_minor is not None:
         lines.append(f"Service cost: {money(snapshot.totals.service_cost_minor)}")
@@ -87,12 +99,17 @@ def render_text_report(
         ]
     )
     if snapshot.line_items:
-        lines.extend(
-            f"- {line.label}: {line.units} completed · "
-            f"{_duration(str(int(line.manual_minutes) * 60_000))} manual · "
-            f"{_duration(line.ai_duration_ms)} AI · {money(line.estimated_value_minor)}"
-            for line in snapshot.line_items
-        )
+        for line in snapshot.line_items:
+            runtime = (
+                f"{_duration(line.ai_duration_ms)} AI"
+                if line.runtime_measurement == "measured"
+                else "AI runtime not measured"
+            )
+            lines.append(
+                f"- {line.label}: {line.units} completed · "
+                f"{_duration(str(int(line.manual_minutes) * 60_000))} manual · "
+                f"{runtime} · {money(line.estimated_value_minor)}"
+            )
     else:
         lines.append("- No completed work in this period.")
     if snapshot.evidence_issues:
@@ -111,10 +128,11 @@ def render_html_report(
     title = options.title or "Weekly AI value scorecard"
     account = options.account_name or snapshot.account_id
     mode = "Illustrative estimate" if snapshot.mode == "illustrative" else "Evidence-backed report"
+    ai_runtime, time_difference = _runtime_summary(snapshot)
     rows = "".join(
         f"<tr><td>{escape(line.label)}</td><td>{line.units}</td>"
         f"<td>{escape(_duration(str(int(line.manual_minutes) * 60_000)))}</td>"
-        f"<td>{escape(_duration(line.ai_duration_ms))}</td>"
+        f"<td>{escape(_duration(line.ai_duration_ms) if line.runtime_measurement == 'measured' else 'Not measured')}</td>"
         f"<td>{escape(money(line.estimated_value_minor))}</td></tr>"
         for line in snapshot.line_items
     ) or '<tr><td colspan="5">No completed work in this period.</td></tr>'
@@ -154,8 +172,8 @@ def render_html_report(
                 "Manual time",
                 _duration(str(int(snapshot.totals.manual_minutes) * 60_000)),
             ),
-            metric("AI runtime", _duration(snapshot.totals.ai_duration_ms)),
-            metric("Time difference", _duration(snapshot.totals.time_saved_ms)),
+            metric("AI runtime", ai_runtime),
+            metric("Time difference", time_difference),
             *(metric(label, value) for label, value in optional_metrics),
         ]
     )

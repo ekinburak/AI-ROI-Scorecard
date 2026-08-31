@@ -13,7 +13,7 @@ from pydantic import (
 )
 
 SCHEMA_VERSION: Literal[1] = 1
-RENDERER_VERSION = "1.0.0"
+RENDERER_VERSION = "1.1.0"
 
 
 def _to_camel(value: str) -> str:
@@ -174,7 +174,10 @@ class EstimateWorkflow(Model):
     label: str = Field(min_length=1)
     manual_minutes: int = Field(ge=0)
     units: int = Field(default=1, gt=0)
-    ai_duration_ms: int = Field(ge=0)
+    ai_duration_ms: int | None = Field(default=None, ge=0)
+    value_group_key: str | None = Field(default=None, min_length=1)
+    value_group_label: str | None = Field(default=None, min_length=1)
+    hourly_value_minor: NonNegativeIntegerString | None = None
 
 
 class EstimateInput(Model):
@@ -194,6 +197,10 @@ class ScorecardLineItem(Model):
     units: int = Field(ge=0)
     manual_minutes: NonNegativeIntegerString
     ai_duration_ms: NonNegativeIntegerString
+    runtime_measurement: Literal["measured", "not_provided"]
+    value_group_key: str | None
+    value_group_label: str | None
+    hourly_value_minor: NonNegativeIntegerString
     estimated_value_minor: NonNegativeIntegerString
     evidence_level: Literal["measured", "approved_baseline", "illustrative"]
 
@@ -223,6 +230,7 @@ class ScorecardSnapshot(Model):
     evidence_watermark: NonNegativeIntegerString | None = None
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
     currency_minor_unit_scale: int = Field(ge=0, le=4)
+    runtime_measurement: Literal["measured", "partial", "not_provided"]
     status: Literal["ready", "send_not_recommended", "needs_attention"]
     line_items: list[ScorecardLineItem]
     totals: ScorecardTotals

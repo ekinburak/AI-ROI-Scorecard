@@ -59,6 +59,45 @@ describe("scorecard generation", () => {
     expect(snapshot.totals.estimatedValueMinor).toBe("2");
   });
 
+  it("supports team value rates without inventing unmeasured AI runtime", () => {
+    const snapshot = estimateScorecard({
+      period: { start: "2026-08-01T00:00:00.000Z", end: "2026-08-08T00:00:00.000Z" },
+      generatedAt: "2026-08-08T08:00:00.000Z",
+      workflows: [
+        {
+          workflowKey: "support",
+          label: "Support work",
+          manualMinutes: 60,
+          units: 1,
+          valueGroupKey: "customer-support",
+          valueGroupLabel: "Customer support",
+          hourlyValueMinor: "15000",
+        },
+        {
+          workflowKey: "operations",
+          label: "Operations work",
+          manualMinutes: 120,
+          units: 1,
+          valueGroupKey: "operations",
+          valueGroupLabel: "Operations",
+          hourlyValueMinor: "8000",
+        },
+      ],
+      valuation: { currency: "USD", hourlyValueMinor: "10000" },
+    });
+    expect(snapshot.totals.estimatedValueMinor).toBe("31000");
+    expect(snapshot.runtimeMeasurement).toBe("not_provided");
+    expect(snapshot.lineItems[0]).toMatchObject({
+      valueGroupLabel: "Customer support",
+      hourlyValueMinor: "15000",
+      runtimeMeasurement: "not_provided",
+    });
+    const report = renderReport(snapshot);
+    expect(report.text).toContain("AI runtime: Not measured");
+    expect(report.text).toContain("Time difference: Available after instrumentation");
+    expect(report.text).not.toContain("AI runtime: 0 sec");
+  });
+
   it("preserves negative ROI and omits ratios without a positive same-period cost", () => {
     const base = {
       period: { start: "2026-08-01T00:00:00.000Z", end: "2026-08-08T00:00:00.000Z" },
@@ -113,6 +152,7 @@ describe("scorecard generation", () => {
     input.events = input.events.filter((event: any) => event.eventId !== "event-02");
     const snapshot = generateScorecard(input);
     expect(snapshot.status).toBe("needs_attention");
+    expect(snapshot.runtimeMeasurement).toBe("partial");
     expect(snapshot.evidenceIssues.join(" ")).toContain("no measured finish");
   });
 

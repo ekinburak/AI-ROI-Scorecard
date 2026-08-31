@@ -157,13 +157,15 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
         seen_outcomes.add(outcome.outcome_id)
         unique_outcomes.append(outcome)
 
-    for start in [event for event in period_events if isinstance(event, AttemptStartedEvent)]:
+    period_starts = [event for event in period_events if isinstance(event, AttemptStartedEvent)]
+    period_finishes = [event for event in period_events if isinstance(event, AttemptFinishedEvent)]
+    for start in period_starts:
         matching = [finish for finish in finishes if finish.attempt_id == start.attempt_id]
         if not matching:
             evidence_issues.append(f"Attempt {start.attempt_id} has no measured finish event.")
         if len(matching) > 1:
             evidence_issues.append(f"Attempt {start.attempt_id} has multiple finish events.")
-    for finish in [event for event in period_events if isinstance(event, AttemptFinishedEvent)]:
+    for finish in period_finishes:
         matching_starts = [start for start in starts if start.attempt_id == finish.attempt_id]
         if not matching_starts:
             evidence_issues.append(f"Attempt {finish.attempt_id} has no start event.")
@@ -182,6 +184,18 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
             evidence_issues.append(
                 f"Unsuccessful attempt {finish.attempt_id} has no exception evidence."
             )
+    runtime_measurement = (
+        "measured"
+        if all(
+            sum(finish.attempt_id == start.attempt_id for finish in finishes) == 1
+            for start in period_starts
+        )
+        and all(
+            sum(start.attempt_id == finish.attempt_id for start in starts) == 1
+            for finish in period_finishes
+        )
+        else "partial"
+    )
 
     line_map: dict[str, dict[str, Any]] = {}
     for outcome in unique_outcomes:
@@ -223,6 +237,10 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
                 "units": outcome.units,
                 "manual_minutes": manual_minutes,
                 "ai_duration_ms": 0,
+                "runtime_measurement": "measured",
+                "value_group_key": None,
+                "value_group_label": None,
+                "hourly_value_minor": parsed.valuation.hourly_value_minor,
                 "estimated_value_minor": estimated_value,
                 "evidence_level": policy.evidence_level,
             }
@@ -334,6 +352,7 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
             "evidence_watermark": evidence_watermark,
             "currency": parsed.valuation.currency,
             "currency_minor_unit_scale": parsed.valuation.currency_minor_unit_scale,
+            "runtime_measurement": runtime_measurement,
             "status": status,
             "line_items": line_items,
             "totals": ScorecardTotals.model_validate(totals_data),
@@ -350,6 +369,9 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
     line_items = []
     for workflow in parsed.workflows:
         manual_minutes = workflow.manual_minutes * workflow.units
+        hourly_value_minor = (
+            workflow.hourly_value_minor or parsed.valuation.hourly_value_minor
+        )
         line_items.append(
             ScorecardLineItem(
                 workflow_key=workflow.workflow_key,
@@ -358,10 +380,16 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
                 label=workflow.label,
                 units=workflow.units,
                 manual_minutes=str(manual_minutes),
-                ai_duration_ms=str(workflow.ai_duration_ms),
+                ai_duration_ms=str(workflow.ai_duration_ms or 0),
+                runtime_measurement=(
+                    "not_provided" if workflow.ai_duration_ms is None else "measured"
+                ),
+                value_group_key=workflow.value_group_key,
+                value_group_label=workflow.value_group_label,
+                hourly_value_minor=hourly_value_minor,
                 estimated_value_minor=str(
                     round_half_up(
-                        manual_minutes * int(parsed.valuation.hourly_value_minor), 60
+                        manual_minutes * int(hourly_value_minor), 60
                     )
                 ),
                 evidence_level="illustrative",
@@ -371,6 +399,15 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
     ai_duration_ms = sum(int(line.ai_duration_ms) for line in line_items)
     estimated_value = sum(int(line.estimated_value_minor) for line in line_items)
     completed_outcomes = sum(line.units for line in line_items)
+    measured_runtime_count = sum(
+        workflow.ai_duration_ms is not None for workflow in parsed.workflows
+    )
+    if parsed.workflows and measured_runtime_count == len(parsed.workflows):
+        runtime_measurement = "measured"
+    elif measured_runtime_count == 0:
+        runtime_measurement = "not_provided"
+    else:
+        runtime_measurement = "partial"
     source_fingerprint = sha256_canonical(
         {
             "accountId": parsed.account_id,
@@ -403,6 +440,7 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
             "generated_at": parsed.generated_at,
             "currency": parsed.valuation.currency,
             "currency_minor_unit_scale": parsed.valuation.currency_minor_unit_scale,
+            "runtime_measurement": runtime_measurement,
             "status": "send_not_recommended" if completed_outcomes == 0 else "ready",
             "line_items": line_items,
             "totals": totals,

@@ -120,12 +120,14 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
       evidenceIssues.push(`Outcome ${outcome.outcomeId} was recorded more than once.`);
     }
   }
-  for (const start of periodEvents.filter((event) => event.type === "attempt_started")) {
+  const periodStarts = periodEvents.filter((event) => event.type === "attempt_started");
+  const periodFinishes = periodEvents.filter((event) => event.type === "attempt_finished");
+  for (const start of periodStarts) {
     const matching = finishes.filter((finish) => finish.attemptId === start.attemptId);
     if (matching.length === 0) evidenceIssues.push(`Attempt ${start.attemptId} has no measured finish event.`);
     if (matching.length > 1) evidenceIssues.push(`Attempt ${start.attemptId} has multiple finish events.`);
   }
-  for (const finish of periodEvents.filter((event) => event.type === "attempt_finished")) {
+  for (const finish of periodFinishes) {
     const matchingStarts = starts.filter((start) => start.attemptId === finish.attemptId);
     if (matchingStarts.length === 0) evidenceIssues.push(`Attempt ${finish.attemptId} has no start event.`);
     if (matchingStarts.length > 1) evidenceIssues.push(`Attempt ${finish.attemptId} has multiple start events.`);
@@ -140,6 +142,15 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
       evidenceIssues.push(`Unsuccessful attempt ${finish.attemptId} has no exception evidence.`);
     }
   }
+  const runtimeMeasurement =
+    periodStarts.every(
+      (start) => finishes.filter((finish) => finish.attemptId === start.attemptId).length === 1,
+    ) &&
+    periodFinishes.every(
+      (finish) => starts.filter((start) => start.attemptId === finish.attemptId).length === 1,
+    )
+      ? "measured"
+      : "partial";
   const lineMap = new Map<string, ScorecardLineItem>();
 
   for (const outcome of uniqueOutcomes) {
@@ -186,6 +197,10 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
         units: outcome.units,
         manualMinutes: manualMinutes.toString(),
         aiDurationMs: "0",
+        runtimeMeasurement: "measured",
+        valueGroupKey: null,
+        valueGroupLabel: null,
+        hourlyValueMinor: parsed.valuation.hourlyValueMinor,
         estimatedValueMinor: estimatedValue.toString(),
         evidenceLevel: policy.evidenceLevel,
       });
@@ -283,6 +298,7 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
     ...(evidenceWatermark === undefined ? {} : { evidenceWatermark }),
     currency: parsed.valuation.currency,
     currencyMinorUnitScale: parsed.valuation.currencyMinorUnitScale,
+    runtimeMeasurement,
     status,
     lineItems,
     totals: {
@@ -305,6 +321,7 @@ export function estimateScorecard(input: unknown): ScorecardSnapshot {
   const parsed = EstimateInputSchema.parse(input);
   const lineItems = parsed.workflows.map<ScorecardLineItem>((workflow) => {
     const manualMinutes = BigInt(workflow.manualMinutes) * BigInt(workflow.units);
+    const hourlyValueMinor = workflow.hourlyValueMinor ?? parsed.valuation.hourlyValueMinor;
     return {
       workflowKey: workflow.workflowKey,
       policyKey: workflow.workflowKey,
@@ -312,9 +329,13 @@ export function estimateScorecard(input: unknown): ScorecardSnapshot {
       label: workflow.label,
       units: workflow.units,
       manualMinutes: manualMinutes.toString(),
-      aiDurationMs: BigInt(workflow.aiDurationMs).toString(),
+      aiDurationMs: BigInt(workflow.aiDurationMs ?? 0).toString(),
+      runtimeMeasurement: workflow.aiDurationMs === undefined ? "not_provided" : "measured",
+      valueGroupKey: workflow.valueGroupKey ?? null,
+      valueGroupLabel: workflow.valueGroupLabel ?? null,
+      hourlyValueMinor,
       estimatedValueMinor: roundHalfUp(
-        manualMinutes * BigInt(parsed.valuation.hourlyValueMinor),
+        manualMinutes * BigInt(hourlyValueMinor),
         60n,
       ).toString(),
       evidenceLevel: "illustrative",
@@ -333,6 +354,15 @@ export function estimateScorecard(input: unknown): ScorecardSnapshot {
     0n,
   );
   const completedOutcomes = lineItems.reduce((total, line) => total + line.units, 0);
+  const measuredRuntimeCount = parsed.workflows.filter(
+    (workflow) => workflow.aiDurationMs !== undefined,
+  ).length;
+  const runtimeMeasurement =
+    measuredRuntimeCount === parsed.workflows.length && parsed.workflows.length > 0
+      ? "measured"
+      : measuredRuntimeCount === 0
+        ? "not_provided"
+        : "partial";
   const sourceFingerprint = sha256Canonical({
     accountId: parsed.accountId,
     mode: "illustrative",
@@ -350,6 +380,7 @@ export function estimateScorecard(input: unknown): ScorecardSnapshot {
     generatedAt: parsed.generatedAt,
     currency: parsed.valuation.currency,
     currencyMinorUnitScale: parsed.valuation.currencyMinorUnitScale,
+    runtimeMeasurement,
     status: completedOutcomes === 0 ? "send_not_recommended" : "ready",
     lineItems,
     totals: {

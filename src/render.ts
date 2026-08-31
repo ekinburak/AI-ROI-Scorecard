@@ -16,6 +16,9 @@ export interface ReportLineViewModel {
   units: number;
   manualTime: string;
   aiTime: string;
+  runtimeMeasurement: "measured" | "not_provided";
+  valueGroupLabel?: string;
+  hourlyValue: string;
   estimatedValue: string;
 }
 
@@ -25,6 +28,7 @@ export interface ReportViewModel {
   period: string;
   modeLabel: string;
   status: ScorecardSnapshot["status"];
+  runtimeMeasurement: ScorecardSnapshot["runtimeMeasurement"];
   estimatedValue: string;
   manualTime: string;
   aiTime: string;
@@ -106,6 +110,16 @@ export function toReportViewModel(
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
   const roi = snapshot.totals.roiBasisPoints;
   const multiple = snapshot.totals.valueToCostBasisPoints;
+  const aiTime =
+    snapshot.runtimeMeasurement === "measured"
+      ? formatDuration(snapshot.totals.aiDurationMs, locale)
+      : snapshot.runtimeMeasurement === "partial"
+        ? "Partially measured"
+        : "Not measured";
+  const timeSaved =
+    snapshot.runtimeMeasurement === "measured"
+      ? formatDuration(snapshot.totals.timeSavedMs, locale)
+      : "Available after instrumentation";
   return {
     title: options.title ?? "Weekly AI value scorecard",
     accountName: options.accountName ?? snapshot.accountId,
@@ -114,10 +128,11 @@ export function toReportViewModel(
     )}`,
     modeLabel: snapshot.mode === "illustrative" ? "Illustrative estimate" : "Evidence-backed report",
     status: snapshot.status,
+    runtimeMeasurement: snapshot.runtimeMeasurement,
     estimatedValue: money(snapshot.totals.estimatedValueMinor),
     manualTime: formatDuration((BigInt(snapshot.totals.manualMinutes) * 60_000n).toString(), locale),
-    aiTime: formatDuration(snapshot.totals.aiDurationMs, locale),
-    timeSaved: formatDuration(snapshot.totals.timeSavedMs, locale),
+    aiTime,
+    timeSaved,
     ...(snapshot.totals.serviceCostMinor === undefined
       ? {}
       : { serviceCost: money(snapshot.totals.serviceCostMinor) }),
@@ -145,7 +160,13 @@ export function toReportViewModel(
       label: line.label,
       units: line.units,
       manualTime: formatDuration((BigInt(line.manualMinutes) * 60_000n).toString(), locale),
-      aiTime: formatDuration(line.aiDurationMs, locale),
+      aiTime:
+        line.runtimeMeasurement === "measured"
+          ? formatDuration(line.aiDurationMs, locale)
+          : "Not measured",
+      runtimeMeasurement: line.runtimeMeasurement,
+      ...(line.valueGroupLabel === null ? {} : { valueGroupLabel: line.valueGroupLabel }),
+      hourlyValue: money(line.hourlyValueMinor),
       estimatedValue: money(line.estimatedValueMinor),
     })),
     evidenceIssues: snapshot.evidenceIssues,
@@ -165,8 +186,13 @@ export function renderTextReport(
     view.valueToCost ? `Value to cost: ${view.valueToCost}` : undefined,
   ].filter(Boolean);
   const workflowLines = view.lines.map(
-    (line) =>
-      `- ${line.label}: ${line.units} completed · ${line.manualTime} manual · ${line.aiTime} AI · ${line.estimatedValue}`,
+    (line) => {
+      const runtime =
+        line.runtimeMeasurement === "measured"
+          ? `${line.aiTime} AI`
+          : "AI runtime not measured";
+      return `- ${line.label}: ${line.units} completed · ${line.manualTime} manual · ${runtime} · ${line.estimatedValue}`;
+    },
   );
   const issueLines = view.evidenceIssues.map((issue) => `- ${issue}`);
   return [

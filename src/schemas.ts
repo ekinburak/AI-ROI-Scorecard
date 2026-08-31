@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const SCHEMA_VERSION = 1 as const;
-export const RENDERER_VERSION = "1.0.0" as const;
+export const RENDERER_VERSION = "1.1.0" as const;
 
 export const DecimalIntegerStringSchema = z.string().regex(/^-?(0|[1-9]\d*)$/);
 export const NonNegativeIntegerStringSchema = z.string().regex(/^(0|[1-9]\d*)$/);
@@ -154,7 +154,10 @@ export const EstimateWorkflowSchema = z.object({
   label: z.string().min(1),
   manualMinutes: z.number().int().nonnegative(),
   units: z.number().int().positive().default(1),
-  aiDurationMs: z.number().int().nonnegative(),
+  aiDurationMs: z.number().int().nonnegative().optional(),
+  valueGroupKey: z.string().min(1).optional(),
+  valueGroupLabel: z.string().min(1).optional(),
+  hourlyValueMinor: NonNegativeIntegerStringSchema.optional(),
 });
 
 export const EstimateInputSchema = z.object({
@@ -174,6 +177,10 @@ export const ScorecardLineItemSchema = z.object({
   units: z.number().int().nonnegative(),
   manualMinutes: NonNegativeIntegerStringSchema,
   aiDurationMs: NonNegativeIntegerStringSchema,
+  runtimeMeasurement: z.enum(["measured", "not_provided"]),
+  valueGroupKey: z.string().nullable(),
+  valueGroupLabel: z.string().nullable(),
+  hourlyValueMinor: NonNegativeIntegerStringSchema,
   estimatedValueMinor: NonNegativeIntegerStringSchema,
   evidenceLevel: z.enum(["measured", "approved_baseline", "illustrative"]),
 });
@@ -203,6 +210,7 @@ export const ScorecardSnapshotSchema = z.object({
   evidenceWatermark: NonNegativeIntegerStringSchema.optional(),
   currency: z.string().regex(/^[A-Z]{3}$/),
   currencyMinorUnitScale: z.number().int().min(0).max(4),
+  runtimeMeasurement: z.enum(["measured", "partial", "not_provided"]),
   status: z.enum(["ready", "send_not_recommended", "needs_attention"]),
   lineItems: z.array(ScorecardLineItemSchema),
   totals: ScorecardTotalsSchema,

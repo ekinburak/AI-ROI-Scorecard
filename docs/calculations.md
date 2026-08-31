@@ -12,6 +12,9 @@ estimated value = round_half_up(manual minutes × hourly value minor / 60)
 
 Rounding occurs per line item before line values are summed. This makes the result stable when
 workflows have different policies and prevents the report renderer from changing financial math.
+Illustrative inputs may override the default hourly value on each workflow so a calculator can
+assign an approved rate to the team or value group that handles it. Audited generation continues
+to use the separately supplied valuation context; instrumentation metadata never contains money.
 
 When a positive same-period service cost is present:
 
@@ -27,5 +30,9 @@ value-to-cost multiple are omitted because the ratio has no meaningful denominat
 Time difference is manual duration minus AI active runtime. It may be negative if automation took
 longer. AI active runtime includes failed retries; it excludes queue delay, backoff, callback
 latency, and human-review waiting.
+
+When an illustrative input omits AI runtime, the snapshot records `runtimeMeasurement` as
+`not_provided`. Renderers show the runtime and time difference as unavailable until instrumentation
+supplies them; they do not describe an absent measurement as zero.
 
 One scorecard uses one currency and one minor-unit scale. Currency conversion is outside the SDK.

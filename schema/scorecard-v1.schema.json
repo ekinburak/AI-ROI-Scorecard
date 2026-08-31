@@ -370,9 +370,30 @@
       "additionalProperties": false,
       "properties": {
         "aiDurationMs": {
-          "minimum": 0,
-          "title": "Aidurationms",
-          "type": "integer"
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aidurationms"
+        },
+        "hourlyValueMinor": {
+          "anyOf": [
+            {
+              "pattern": "^(0|[1-9]\\d*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hourlyvalueminor"
         },
         "label": {
           "minLength": 1,
@@ -390,6 +411,32 @@
           "title": "Units",
           "type": "integer"
         },
+        "valueGroupKey": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuegroupkey"
+        },
+        "valueGroupLabel": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuegrouplabel"
+        },
         "workflowKey": {
           "minLength": 1,
           "title": "Workflowkey",
@@ -399,8 +446,7 @@
       "required": [
         "workflowKey",
         "label",
-        "manualMinutes",
-        "aiDurationMs"
+        "manualMinutes"
       ],
       "title": "EstimateWorkflow",
       "type": "object"
@@ -822,6 +868,11 @@
           "title": "Evidencelevel",
           "type": "string"
         },
+        "hourlyValueMinor": {
+          "pattern": "^(0|[1-9]\\d*)$",
+          "title": "Hourlyvalueminor",
+          "type": "string"
+        },
         "label": {
           "title": "Label",
           "type": "string"
@@ -846,10 +897,40 @@
           ],
           "title": "Policyversion"
         },
+        "runtimeMeasurement": {
+          "enum": [
+            "measured",
+            "not_provided"
+          ],
+          "title": "Runtimemeasurement",
+          "type": "string"
+        },
         "units": {
           "minimum": 0,
           "title": "Units",
           "type": "integer"
+        },
+        "valueGroupKey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valuegroupkey"
+        },
+        "valueGroupLabel": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valuegrouplabel"
         },
         "workflowKey": {
           "title": "Workflowkey",
@@ -864,6 +945,10 @@
         "units",
         "manualMinutes",
         "aiDurationMs",
+        "runtimeMeasurement",
+        "valueGroupKey",
+        "valueGroupLabel",
+        "hourlyValueMinor",
         "estimatedValueMinor",
         "evidenceLevel"
       ],
@@ -934,6 +1019,15 @@
         "period": {
           "$ref": "#/$defs/ReportPeriod"
         },
+        "runtimeMeasurement": {
+          "enum": [
+            "measured",
+            "partial",
+            "not_provided"
+          ],
+          "title": "Runtimemeasurement",
+          "type": "string"
+        },
         "schemaVersion": {
           "const": 1,
           "default": 1,
@@ -973,6 +1067,7 @@
         "generatedAt",
         "currency",
         "currencyMinorUnitScale",
+        "runtimeMeasurement",
         "status",
         "lineItems",
         "totals",
