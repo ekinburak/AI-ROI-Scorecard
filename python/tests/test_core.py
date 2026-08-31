@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from ai_roi_scorecard import (
+    ReportOptions,
     canonical_json,
     estimate_scorecard,
     generate_scorecard,
@@ -108,6 +109,11 @@ def test_team_value_rates_do_not_invent_unmeasured_runtime() -> None:
     assert "AI runtime: Not measured" in report.text
     assert "Time difference: Available after instrumentation" in report.text
     assert "AI runtime: 0 sec" not in report.text
+    value_focused_report = render_report(snapshot, ReportOptions(include_runtime=False))
+    assert "AI runtime" not in value_focused_report.text
+    assert "Time difference" not in value_focused_report.text
+    assert "<th>AI</th>" not in value_focused_report.html
+    assert "Support work: 1 completed · 1.0 hr manual · USD 150.00" in value_focused_report.text
 
 
 def test_canonical_hash_and_safe_renderer() -> None:

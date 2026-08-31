@@ -13,7 +13,7 @@ from pydantic import (
 )
 
 SCHEMA_VERSION: Literal[1] = 1
-RENDERER_VERSION = "1.1.0"
+RENDERER_VERSION = "1.2.0"
 
 
 def _to_camel(value: str) -> str:

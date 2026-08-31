@@ -12,10 +12,14 @@ name, locale, and title. It never recalculates value.
 
 Runtime labels follow the snapshot's measurement state. An illustrative estimate without runtime
 evidence says `Not measured` and withholds the time difference until instrumentation is connected.
+Runtime remains part of the immutable audit snapshot even when a customer-facing report does not
+need to display it. Pass `includeRuntime: false` in TypeScript or `include_runtime=False` in Python
+to omit runtime and time-difference rows from HTML and text reports.
 
 ```ts
 const artifact = renderReport(snapshot, {
   accountName: "Example team",
+  includeRuntime: false,
   title: "Weekly automation value",
 });
 ```

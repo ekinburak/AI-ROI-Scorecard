@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const SCHEMA_VERSION = 1 as const;
-export const RENDERER_VERSION = "1.1.0" as const;
+export const RENDERER_VERSION = "1.2.0" as const;
 
 export const DecimalIntegerStringSchema = z.string().regex(/^-?(0|[1-9]\d*)$/);
 export const NonNegativeIntegerStringSchema = z.string().regex(/^(0|[1-9]\d*)$/);

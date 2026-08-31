@@ -96,6 +96,11 @@ describe("scorecard generation", () => {
     expect(report.text).toContain("AI runtime: Not measured");
     expect(report.text).toContain("Time difference: Available after instrumentation");
     expect(report.text).not.toContain("AI runtime: 0 sec");
+    const valueFocusedReport = renderReport(snapshot, { includeRuntime: false });
+    expect(valueFocusedReport.text).not.toContain("AI runtime");
+    expect(valueFocusedReport.text).not.toContain("Time difference");
+    expect(valueFocusedReport.html).not.toContain("<th>AI</th>");
+    expect(valueFocusedReport.text).toContain("Support work: 1 completed · 1 hr manual · $150.00");
   });
 
   it("preserves negative ROI and omits ratios without a positive same-period cost", () => {

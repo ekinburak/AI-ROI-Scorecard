@@ -7,6 +7,7 @@ import {
 
 export interface ReportOptions {
   accountName?: string;
+  includeRuntime?: boolean;
   locale?: string;
   title?: string;
 }
@@ -179,6 +180,7 @@ export function renderTextReport(
   options: ReportOptions = {},
 ): string {
   const view = toReportViewModel(snapshot, options);
+  const includeRuntime = options.includeRuntime ?? true;
   const costLines = [
     view.serviceCost ? `Service cost: ${view.serviceCost}` : undefined,
     view.netValue ? `Net value: ${view.netValue}` : undefined,
@@ -191,7 +193,12 @@ export function renderTextReport(
         line.runtimeMeasurement === "measured"
           ? `${line.aiTime} AI`
           : "AI runtime not measured";
-      return `- ${line.label}: ${line.units} completed · ${line.manualTime} manual · ${runtime} · ${line.estimatedValue}`;
+      return `- ${line.label}: ${[
+        `${line.units} completed`,
+        `${line.manualTime} manual`,
+        ...(includeRuntime ? [runtime] : []),
+        line.estimatedValue,
+      ].join(" · ")}`;
     },
   );
   const issueLines = view.evidenceIssues.map((issue) => `- ${issue}`);
@@ -202,8 +209,9 @@ export function renderTextReport(
     "",
     `Estimated value: ${view.estimatedValue}`,
     `Manual time: ${view.manualTime}`,
-    `AI runtime: ${view.aiTime}`,
-    `Time difference: ${view.timeSaved}`,
+    ...(includeRuntime
+      ? [`AI runtime: ${view.aiTime}`, `Time difference: ${view.timeSaved}`]
+      : []),
     ...costLines,
     `Exceptions: ${view.exceptions} (${view.unresolvedExceptions} unresolved)`,
     `Approvals requested: ${view.approvalsRequested}`,
@@ -221,6 +229,7 @@ export function renderHtmlReport(
   options: ReportOptions = {},
 ): string {
   const view = toReportViewModel(snapshot, options);
+  const includeRuntime = options.includeRuntime ?? true;
   const optionalMetrics = [
     view.serviceCost ? ["Service cost", view.serviceCost] : undefined,
     view.netValue ? ["Net value", view.netValue] : undefined,
@@ -236,10 +245,12 @@ export function renderHtmlReport(
         .map(
           (line) => `<tr><td>${escapeHtml(line.label)}</td><td>${line.units}</td><td>${escapeHtml(
             line.manualTime,
-          )}</td><td>${escapeHtml(line.aiTime)}</td><td>${escapeHtml(line.estimatedValue)}</td></tr>`,
+          )}</td>${includeRuntime ? `<td>${escapeHtml(line.aiTime)}</td>` : ""}<td>${escapeHtml(
+            line.estimatedValue,
+          )}</td></tr>`,
         )
         .join("")
-    : `<tr><td colspan="5">No completed work in this period.</td></tr>`;
+    : `<tr><td colspan="${includeRuntime ? 5 : 4}">No completed work in this period.</td></tr>`;
   const issues = view.evidenceIssues.length
     ? `<section class="issues"><h2>Evidence requiring attention</h2><ul>${view.evidenceIssues
         .map((issue) => `<li>${escapeHtml(issue)}</li>`)
@@ -257,10 +268,10 @@ export function renderHtmlReport(
 <section class="metrics">${metric("Estimated value", view.estimatedValue, true)}${metric(
     "Manual time",
     view.manualTime,
-  )}${metric("AI runtime", view.aiTime)}${metric("Time difference", view.timeSaved)}${optionalMetrics
+  )}${includeRuntime ? `${metric("AI runtime", view.aiTime)}${metric("Time difference", view.timeSaved)}` : ""}${optionalMetrics
     .map(([label, value]) => metric(label ?? "", value ?? ""))
     .join("")}</section>
-<section><h2>Work completed</h2><div class="table-wrap"><table><thead><tr><th>Workflow</th><th>Completed</th><th>Manual</th><th>AI</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+<section><h2>Work completed</h2><div class="table-wrap"><table><thead><tr><th>Workflow</th><th>Completed</th><th>Manual</th>${includeRuntime ? "<th>AI</th>" : ""}<th>Value</th></tr></thead><tbody>${rows}</tbody></table></div></section>
 <section class="summary"><div><strong>${view.exceptions}</strong><span>Exceptions</span></div><div><strong>${view.unresolvedExceptions}</strong><span>Unresolved</span></div><div><strong>${view.approvalsRequested}</strong><span>Human approvals</span></div></section>${issues}
 <footer>Snapshot ${escapeHtml(view.snapshotHash)}</footer></main></body></html>`;
 }
