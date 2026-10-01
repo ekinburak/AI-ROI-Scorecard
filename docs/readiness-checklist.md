@@ -17,7 +17,7 @@ public release. Adapter scope remains in [adapters-checklist.md](adapters-checkl
 | Waiting | Current commit's full CI matrix | Commit, push, then record successful run and artifact digests. Older main CI does not certify these changes. |
 | Waiting — external | npm first publication and trusted publisher | Authenticate npm bootstrap of verified tarball if needed; configure repo `ekinburak/AI-ROI-Scorecard`, `release.yml`, environment `release`. |
 | Waiting — external | PyPI pending publisher | Owner must register project `ai-roi-scorecard`, same GitHub repo/workflow/environment. |
-| Waiting | Public install smoke tests | Install exact 0.2.0 from npm/PyPI; rerun documented commands and compare hashes. |
+| Implemented; live run waiting | Public install smoke tests | Release `public-smoke` installs exact 0.2.0 from npm/PyPI and reruns shared CLI contracts before creating the GitHub release. |
 | Waiting | Website registry dependency | After npm publication, replace vendored preview archive with exact registry version `0.2.0`. |
 | Waiting | Website current CI and browser tests | Calculator, hydration, downloads, mobile layout, CLI documentation must pass on deployed commit. |
 | Waiting — external | Cloudflare Pages credentials | Website repo needs `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; then deploy exact validated output and record live smoke evidence. |

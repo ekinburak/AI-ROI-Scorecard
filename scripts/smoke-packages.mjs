@@ -5,6 +5,8 @@ import { resolve, join } from "node:path";
 import { spawnSync, spawn } from "node:child_process";
 
 const root = resolve(import.meta.dirname, "..");
+const manifest = JSON.parse(readFileSync(join(root,"package.json"), "utf8"));
+const publicInstall = process.env.SMOKE_PUBLIC === "true";
 const artifacts = resolve(process.argv[2] ?? join(root, "artifacts"));
 const files = readdirSync(artifacts);
 const archive = join(artifacts, files.find((file) => file.endsWith(".tgz")) ?? "missing.tgz");
@@ -27,11 +29,10 @@ function concurrent(executable, args) {
 }
 try {
   writeFileSync(join(temporary, "package.json"), '{"private":true,"type":"module"}');
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", archive, "react@19", "react-dom@19"]);
+  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", publicInstall ? `ai-roi-scorecard@${manifest.version}` : archive, "react@19", "react-dom@19"]);
   run("uv", ["venv", join(temporary,"venv"), "--python", process.env.SMOKE_PYTHON ?? "3.11"]);
   const python = join(temporary, "venv/bin/python");
-  run("uv", ["pip", "install", "--python", python, wheel]);
-  const manifest = JSON.parse(readFileSync(join(root,"package.json"), "utf8"));
+  run("uv", ["pip", "install", "--python", python, publicInstall ? `ai-roi-scorecard==${manifest.version}` : wheel]);
   const entries = Object.keys(manifest.exports).map((key) => key === "." ? manifest.name : manifest.name + key.slice(1));
   writeFileSync(join(temporary,"imports.mjs"), `import {createRequire} from 'node:module';\nconst require = createRequire(import.meta.url);\nfor (const entry of ${JSON.stringify(entries)}) { await import(entry); require(entry); }\nfor (const library of [await import('ai-roi-scorecard/storage/sqlite'), require('ai-roi-scorecard/storage/sqlite')]) { const db = new library.SqliteScorecardRepository(); await db.migrate(); await db.close(); }`);
   run(process.execPath,[join(temporary,"imports.mjs")]);
