@@ -1,0 +1,39 @@
+[
+  {
+    "policyKey": "ticket-triage",
+    "version": 1,
+    "scope": "default",
+    "label": {
+      "default": "Support ticket triage",
+      "translations": {}
+    },
+    "manualMinutesPerUnit": 45,
+    "evidenceLevel": "approved_baseline",
+    "effectiveFrom": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "policyKey": "reply-draft",
+    "version": 1,
+    "scope": "default",
+    "label": {
+      "default": "Customer reply drafting",
+      "translations": {}
+    },
+    "manualMinutesPerUnit": 60,
+    "evidenceLevel": "approved_baseline",
+    "effectiveFrom": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "policyKey": "reply-draft",
+    "version": 2,
+    "scope": "account",
+    "accountId": "demo-account",
+    "label": {
+      "default": "Customer reply drafting",
+      "translations": {}
+    },
+    "manualMinutesPerUnit": 75,
+    "evidenceLevel": "measured",
+    "effectiveFrom": "2026-08-01T00:00:00.000Z"
+  }
+]

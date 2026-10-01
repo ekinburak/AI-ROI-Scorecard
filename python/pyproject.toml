@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-roi-scorecard"
-version = "0.1.0"
+version = "0.2.0"
 description = "Provider-neutral SDK for auditable AI value scorecards."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -22,6 +22,9 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = ["pydantic>=2.8,<3"]
+
+[project.scripts]
+ai-roi-scorecard = "ai_roi_scorecard.cli:main"
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.2,<4"]

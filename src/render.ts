@@ -1,4 +1,5 @@
 import { canonicalJson, sha256Canonical } from "./canonical.js";
+import { formatDuration, formatMoney } from "./format.js";
 import {
   RENDERER_VERSION,
   ScorecardSnapshotSchema,
@@ -17,7 +18,7 @@ export interface ReportLineViewModel {
   units: number;
   manualTime: string;
   aiTime: string;
-  runtimeMeasurement: "measured" | "not_provided";
+  runtimeMeasurement: "measured" | "partial" | "not_provided";
   valueGroupLabel?: string;
   hourlyValue: string;
   estimatedValue: string;
@@ -62,42 +63,27 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#039;");
 }
 
-function formatMoney(
-  minor: string,
-  currency: string,
-  scale: number,
-  locale: string,
-): string {
-  const divisor = 10n ** BigInt(scale);
-  const absolute = BigInt(minor) < 0n ? -BigInt(minor) : BigInt(minor);
-  const numeric = Number(absolute / divisor) + Number(absolute % divisor) / Number(divisor);
-  const signed = BigInt(minor) < 0n ? -numeric : numeric;
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: scale,
-    maximumFractionDigits: scale,
-  }).format(signed);
+function isUnsafePlainTextControl(codePoint: number): boolean {
+  return (
+    codePoint <= 0x001f ||
+    (codePoint >= 0x007f && codePoint <= 0x009f) ||
+    codePoint === 0x061c ||
+    codePoint === 0x200e ||
+    codePoint === 0x200f ||
+    codePoint === 0x2028 ||
+    codePoint === 0x2029 ||
+    (codePoint >= 0x202a && codePoint <= 0x202e) ||
+    (codePoint >= 0x2066 && codePoint <= 0x2069)
+  );
 }
 
-function formatDuration(milliseconds: string, locale: string): string {
-  const value = BigInt(milliseconds);
-  const sign = value < 0n ? "−" : "";
-  const absolute = value < 0n ? -value : value;
-  const totalMinutes = Number(absolute) / 60_000;
-  if (totalMinutes < 1) {
-    return `${sign}${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
-      totalMinutes * 60,
-    )} sec`;
-  }
-  if (totalMinutes < 60) {
-    return `${sign}${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
-      totalMinutes,
-    )} min`;
-  }
-  return `${sign}${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
-    totalMinutes / 60,
-  )} hr`;
+function encodePlainTextField(value: string): string {
+  return [...value].map((character) => {
+    const codePoint = character.codePointAt(0);
+    return codePoint !== undefined && isUnsafePlainTextControl(codePoint)
+      ? `\\u${codePoint.toString(16).toUpperCase().padStart(4, "0")}`
+      : character;
+  }).join("");
 }
 
 export function toReportViewModel(
@@ -119,7 +105,7 @@ export function toReportViewModel(
         : "Not measured";
   const timeSaved =
     snapshot.runtimeMeasurement === "measured"
-      ? formatDuration(snapshot.totals.timeSavedMs, locale)
+      ? formatDuration(snapshot.totals.timeSavedMs ?? "0", locale)
       : "Available after instrumentation";
   return {
     title: options.title ?? "Weekly AI value scorecard",
@@ -164,7 +150,7 @@ export function toReportViewModel(
       aiTime:
         line.runtimeMeasurement === "measured"
           ? formatDuration(line.aiDurationMs, locale)
-          : "Not measured",
+          : line.runtimeMeasurement === "partial" ? "Partially measured" : "Not measured",
       runtimeMeasurement: line.runtimeMeasurement,
       ...(line.valueGroupLabel === null ? {} : { valueGroupLabel: line.valueGroupLabel }),
       hourlyValue: money(line.hourlyValueMinor),
@@ -186,13 +172,13 @@ export function renderTextReport(
     view.netValue ? `Net value: ${view.netValue}` : undefined,
     view.roi ? `ROI: ${view.roi}` : undefined,
     view.valueToCost ? `Value to cost: ${view.valueToCost}` : undefined,
-  ].filter(Boolean);
+  ].filter((line): line is string => line !== undefined);
   const workflowLines = view.lines.map(
     (line) => {
       const runtime =
         line.runtimeMeasurement === "measured"
           ? `${line.aiTime} AI`
-          : "AI runtime not measured";
+          : line.runtimeMeasurement === "partial" ? "AI runtime partially measured" : "AI runtime not measured";
       return `- ${line.label}: ${[
         `${line.units} completed`,
         `${line.manualTime} manual`,
@@ -208,9 +194,9 @@ export function renderTextReport(
     view.modeLabel,
     "",
     `Estimated value: ${view.estimatedValue}`,
-    `Manual time: ${view.manualTime}`,
+    `Manual hours replaced: ${view.manualTime}`,
     ...(includeRuntime
-      ? [`AI runtime: ${view.aiTime}`, `Time difference: ${view.timeSaved}`]
+      ? [`AI runtime: ${view.aiTime}`, ...(view.runtimeMeasurement === "measured" ? [`Hours saved: ${view.timeSaved}`] : [])]
       : []),
     ...costLines,
     `Exceptions: ${view.exceptions} (${view.unresolvedExceptions} unresolved)`,
@@ -221,7 +207,9 @@ export function renderTextReport(
     ...(issueLines.length ? ["", "Evidence requiring attention", ...issueLines] : []),
     "",
     `Snapshot: ${view.snapshotHash}`,
-  ].join("\n");
+  ]
+    .map(encodePlainTextField)
+    .join("\n");
 }
 
 export function renderHtmlReport(
@@ -266,9 +254,9 @@ export function renderHtmlReport(
     view.period,
   )}</p></div><div class="status">${escapeHtml(view.status.replaceAll("_", " "))}</div></header>
 <section class="metrics">${metric("Estimated value", view.estimatedValue, true)}${metric(
-    "Manual time",
+    "Manual hours replaced",
     view.manualTime,
-  )}${includeRuntime ? `${metric("AI runtime", view.aiTime)}${metric("Time difference", view.timeSaved)}` : ""}${optionalMetrics
+  )}${includeRuntime ? `${metric("AI runtime", view.aiTime)}${view.runtimeMeasurement === "measured" ? metric("Hours saved", view.timeSaved) : ""}` : ""}${optionalMetrics
     .map(([label, value]) => metric(label ?? "", value ?? ""))
     .join("")}</section>
 <section><h2>Work completed</h2><div class="table-wrap"><table><thead><tr><th>Workflow</th><th>Completed</th><th>Manual</th>${includeRuntime ? "<th>AI</th>" : ""}<th>Value</th></tr></thead><tbody>${rows}</tbody></table></div></section>

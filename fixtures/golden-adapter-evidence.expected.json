@@ -1,0 +1,36 @@
+[
+  {
+    "accountId": "demo-account",
+    "runId": "trace-triage",
+    "attemptId": "span-triage",
+    "workflowKey": "ticket-triage",
+    "policyKey": "ticket-triage",
+    "eventId": "span-triage:started",
+    "type": "attempt_started",
+    "occurredAt": "2026-08-22T10:00:00.000Z"
+  },
+  {
+    "accountId": "demo-account",
+    "runId": "trace-triage",
+    "attemptId": "span-triage",
+    "workflowKey": "ticket-triage",
+    "policyKey": "ticket-triage",
+    "eventId": "span-triage:finished",
+    "type": "attempt_finished",
+    "occurredAt": "2026-08-22T10:00:01.200Z",
+    "status": "succeeded",
+    "activeDurationMs": 1200
+  },
+  {
+    "accountId": "demo-account",
+    "runId": "trace-triage",
+    "attemptId": "span-triage",
+    "workflowKey": "ticket-triage",
+    "policyKey": "ticket-triage",
+    "eventId": "span-triage:outcome",
+    "type": "outcome_completed",
+    "occurredAt": "2026-08-22T10:00:01.200Z",
+    "outcomeId": "ticket-42",
+    "units": 1
+  }
+]

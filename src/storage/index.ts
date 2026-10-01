@@ -9,6 +9,7 @@ export interface EvidenceQuery {
 
 export interface EvidenceRepository {
   append(events: EvidenceEvent[]): Promise<StoredEvidenceEvent[]>;
+  appendIfAbsent?(events: EvidenceEvent[]): Promise<StoredEvidenceEvent[]>;
   getEvents(accountId: string, query?: EvidenceQuery): Promise<StoredEvidenceEvent[]>;
   getWatermark(accountId: string): Promise<string>;
 }

@@ -1,6 +1,6 @@
 {
   "name": "ai-roi-scorecard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Provider-neutral SDK for auditable AI value scorecards.",
   "license": "MIT",
   "author": "Ekin Burak Ozturk",
@@ -13,6 +13,21 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./dashboard": {
+      "types": "./dist/dashboard.d.ts",
+      "import": "./dist/dashboard.js",
+      "require": "./dist/dashboard.cjs"
+    },
+    "./dashboard/react": {
+      "types": "./dist/dashboard/react.d.ts",
+      "import": "./dist/dashboard/react.js",
+      "require": "./dist/dashboard/react.cjs"
+    },
+    "./adapters": {
+      "types": "./dist/adapters.d.ts",
+      "import": "./dist/adapters.js",
+      "require": "./dist/adapters.cjs"
     },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
@@ -35,8 +50,20 @@
     "README.md",
     "LICENSE"
   ],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
   },
   "packageManager": "pnpm@10.33.0",
   "scripts": {
@@ -49,11 +76,12 @@
     "check:versions": "node scripts/check-version-sync.mjs",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:examples": "node examples/typescript/support-automation.mjs > /dev/null && cd python && uv run python ../examples/python/support_automation.py > /dev/null",
+    "test:examples": "node examples/typescript/support-automation.mjs > /dev/null && node --input-type=module -e \"import { registerAiRoiDashboard } from './dist/dashboard.js'; registerAiRoiDashboard();\" && node examples/adapters/otel-batch.mjs > /dev/null && cd python && uv run python ../examples/python/support_automation.py > /dev/null",
     "test:postgres": "vitest run tests/postgres.test.ts",
     "typecheck": "tsc --noEmit",
     "version:packages": "changeset version && node scripts/sync-python-version.mjs",
-    "prepack": "pnpm build"
+    "prepack": "pnpm build",
+    "test:packages": "node scripts/smoke-packages.mjs"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",
@@ -64,8 +92,12 @@
     "@eslint/js": "^9.34.0",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.5",
+    "@types/react": "^19.1.12",
     "eslint": "^9.34.0",
+    "happy-dom": "^18.0.1",
     "pg": "^8.16.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.41.0",
@@ -85,5 +117,8 @@
   "bugs": {
     "url": "https://github.com/ekinburak/AI-ROI-Scorecard/issues"
   },
-  "homepage": "https://github.com/ekinburak/AI-ROI-Scorecard#readme"
+  "homepage": "https://github.com/ekinburak/AI-ROI-Scorecard#readme",
+  "bin": {
+    "ai-roi-scorecard": "./dist/cli.js"
+  }
 }

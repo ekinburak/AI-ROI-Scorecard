@@ -40,6 +40,15 @@ describePostgres("PostgreSQL repository", () => {
       "8",
     ]);
     expect(await repository.getWatermark(accountId)).toBe("8");
+    const replay = makeEvent("event-0");
+    const batches = await Promise.all(Array.from({length: 8}, () => repository.appendIfAbsent([replay, replay])));
+    expect(batches.flat()).toHaveLength(0);
+    await expect(repository.append([replay])).rejects.toThrow();
+    await expect(repository.appendIfAbsent([makeEvent("fresh"), {...replay, workflowKey:"conflict"}])).rejects.toThrow("Conflicting evidence");
+    expect(await repository.getWatermark(accountId)).toBe("8");
+    expect(await repository.getEvents(accountId)).toHaveLength(8);
+    const inserted = await repository.appendIfAbsent([makeEvent("fresh"), makeEvent("fresh")]);
+    expect(inserted.map((event) => event.sequence)).toEqual(["9"]);
     await pool.end();
   });
 });

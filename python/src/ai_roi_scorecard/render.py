@@ -54,11 +54,27 @@ def _runtime_summary(snapshot: ScorecardSnapshot) -> tuple[str, str]:
     if snapshot.runtime_measurement == "measured":
         return (
             _duration(snapshot.totals.ai_duration_ms),
-            _duration(snapshot.totals.time_saved_ms),
+            _duration(snapshot.totals.time_saved_ms or "0"),
         )
     if snapshot.runtime_measurement == "partial":
         return "Partially measured", "Available after complete instrumentation"
     return "Not measured", "Available after instrumentation"
+
+
+def _encode_plain_text_field(value: str) -> str:
+    def unsafe(code_point: int) -> bool:
+        return (
+            0x0000 <= code_point <= 0x001F
+            or 0x007F <= code_point <= 0x009F
+            or code_point in {0x061C, 0x200E, 0x200F, 0x2028, 0x2029}
+            or 0x202A <= code_point <= 0x202E
+            or 0x2066 <= code_point <= 0x2069
+        )
+
+    return "".join(
+        f"\\u{ord(character):04X}" if unsafe(ord(character)) else character
+        for character in value
+    )
 
 
 def render_text_report(
@@ -77,10 +93,12 @@ def render_text_report(
         mode,
         "",
         f"Estimated value: {money(snapshot.totals.estimated_value_minor)}",
-        f"Manual time: {_duration(str(int(snapshot.totals.manual_minutes) * 60_000))}",
+        f"Manual hours replaced: {_duration(str(int(snapshot.totals.manual_minutes) * 60_000))}",
     ]
     if options.include_runtime:
-        lines.extend([f"AI runtime: {ai_runtime}", f"Time difference: {time_difference}"])
+        lines.append(f"AI runtime: {ai_runtime}")
+        if snapshot.runtime_measurement == "measured":
+            lines.append(f"Hours saved: {time_difference}")
     if snapshot.totals.service_cost_minor is not None:
         lines.append(f"Service cost: {money(snapshot.totals.service_cost_minor)}")
     if snapshot.totals.net_value_minor is not None:
@@ -120,7 +138,7 @@ def render_text_report(
         lines.extend(["", "Evidence requiring attention"])
         lines.extend(f"- {issue}" for issue in snapshot.evidence_issues)
     lines.extend(["", f"Snapshot: {snapshot.snapshot_hash}"])
-    return "\n".join(lines)
+    return "\n".join(_encode_plain_text_field(line) for line in lines)
 
 
 def render_html_report(
@@ -185,11 +203,11 @@ def render_html_report(
         [
             metric("Estimated value", money(snapshot.totals.estimated_value_minor), True),
             metric(
-                "Manual time",
+                "Manual hours replaced",
                 _duration(str(int(snapshot.totals.manual_minutes) * 60_000)),
             ),
             *(
-                [metric("AI runtime", ai_runtime), metric("Time difference", time_difference)]
+                [metric("AI runtime", ai_runtime), *([metric("Hours saved", time_difference)] if snapshot.runtime_measurement == "measured" else [])]
                 if options.include_runtime
                 else []
             ),

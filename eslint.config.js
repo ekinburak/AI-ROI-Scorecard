@@ -19,8 +19,21 @@ export default tseslint.config(
     languageOptions: {
       globals: {
         console: "readonly",
-        process: "readonly"
-      }
-    }
-  }
+        fetch: "readonly",
+        structuredClone: "readonly",
+        process: "readonly",
+        URL: "readonly",
+      },
+    },
+  },
+  {
+    files: ["examples/dashboard/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        customElements: "readonly",
+        document: "readonly",
+        window: "readonly",
+      },
+    },
+  },
 );

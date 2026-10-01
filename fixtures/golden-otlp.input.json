@@ -1,0 +1,27 @@
+{
+  "resourceSpans": [
+    {
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "traceId": "trace-triage",
+              "spanId": "span-triage",
+              "name": "support-triage",
+              "startTimeUnixNano": "1787392800000000000",
+              "endTimeUnixNano": "1787392801200000000",
+              "status": { "code": 1 },
+              "attributes": [
+                { "key": "roi.account_id", "value": { "stringValue": "demo-account" } },
+                { "key": "roi.workflow_key", "value": { "stringValue": "ticket-triage" } },
+                { "key": "roi.policy_key", "value": { "stringValue": "ticket-triage" } },
+                { "key": "roi.outcome_id", "value": { "stringValue": "ticket-42" } },
+                { "key": "prompt", "value": { "stringValue": "customer email body" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

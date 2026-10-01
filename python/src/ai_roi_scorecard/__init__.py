@@ -1,5 +1,12 @@
 from .calculate import estimate_scorecard, generate_scorecard, round_half_up
 from .canonical import canonical_json, sha256_canonical, sha256_hex
+from .dashboard_view import (
+    DashboardDeltaViewModel,
+    DashboardLineViewModel,
+    DashboardOptions,
+    DashboardViewModel,
+    to_dashboard_view_model,
+)
 from .instrumentation import (
     EvidenceSink,
     InstrumentationConfig,
@@ -11,6 +18,16 @@ from .instrumentation import (
     workflow_attempt,
 )
 from .models import (
+    MAX_DERIVED_INTEGER_STRING_LENGTH,
+    MAX_ESTIMATE_WORKFLOWS,
+    MAX_GENERATION_EVENTS,
+    MAX_GENERATION_POLICIES,
+    MAX_IDENTIFIER_LENGTH,
+    MAX_INPUT_INTEGER,
+    MAX_INTEGER_STRING_LENGTH,
+    MAX_LABEL_LENGTH,
+    MAX_LOCALE_LENGTH,
+    MAX_TRANSLATIONS,
     RENDERER_VERSION,
     SCHEMA_VERSION,
     ApprovalRequestedEvent,
@@ -49,12 +66,26 @@ from .storage import (
 )
 
 __all__ = [
+    "MAX_DERIVED_INTEGER_STRING_LENGTH",
+    "MAX_ESTIMATE_WORKFLOWS",
+    "MAX_GENERATION_EVENTS",
+    "MAX_GENERATION_POLICIES",
+    "MAX_IDENTIFIER_LENGTH",
+    "MAX_INPUT_INTEGER",
+    "MAX_INTEGER_STRING_LENGTH",
+    "MAX_LABEL_LENGTH",
+    "MAX_LOCALE_LENGTH",
+    "MAX_TRANSLATIONS",
     "RENDERER_VERSION",
     "SCHEMA_VERSION",
     "ApprovalRequestedEvent",
     "AttemptFinishedEvent",
     "AttemptStartedEvent",
     "CorrectionAppendedEvent",
+    "DashboardDeltaViewModel",
+    "DashboardLineViewModel",
+    "DashboardOptions",
+    "DashboardViewModel",
     "EstimateInput",
     "EstimateWorkflow",
     "EvidenceEvent",
@@ -68,7 +99,6 @@ __all__ = [
     "OutcomeCompletedEvent",
     "POSTGRES_MIGRATION",
     "PostgresScorecardRepository",
-    "RENDERER_VERSION",
     "ReportOptions",
     "ReportPeriod",
     "RenderedReport",
@@ -94,5 +124,6 @@ __all__ = [
     "sha256_canonical",
     "sha256_hex",
     "track_workflow",
+    "to_dashboard_view_model",
     "workflow_attempt",
 ]

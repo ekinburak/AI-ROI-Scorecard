@@ -1,0 +1,12 @@
+{
+  "attributes": {
+    "outcomeId": "outcome",
+    "units": "count"
+  },
+  "workflowsByName": {
+    "support-triage": {
+      "workflowKey": "ticket-triage",
+      "policyKey": "ticket-triage"
+    }
+  }
+}

@@ -53,3 +53,10 @@ would make the scorecard appear more certain than it is.
 
 Error classification is intentionally safe by default: the error class is recorded, not its raw
 message. Hosts may provide an allowlisted safe message through `classifyError`.
+
+## Already have observability?
+
+If your product already emits OpenTelemetry spans or JSON logs (Langfuse, Datadog, PostHog, etc.),
+you do not need to replace that pipeline with `instrumentAsync`. Use
+[Telemetry adapters](adapters.md) to translate existing telemetry into the same evidence events
+this page describes. Native instrumentation and adapters can coexist in one ledger.

@@ -31,8 +31,9 @@ Time difference is manual duration minus AI active runtime. It may be negative i
 longer. AI active runtime includes failed retries; it excludes queue delay, backoff, callback
 latency, and human-review waiting.
 
-When an illustrative input omits AI runtime, the snapshot records `runtimeMeasurement` as
-`not_provided`. Renderers show the runtime and time difference as unavailable until instrumentation
-supplies them; they do not describe an absent measurement as zero.
+When any input omits AI runtime, the snapshot records `runtimeMeasurement` as
+`not_provided`. Schema v2 sets `timeSavedMs` to `null` for absent or partial runtime.
+Renderers show **Manual hours replaced**; only fully measured runtime produces **Hours saved**.
+Completed outcomes can still be valued against approved policies. Explicit zero remains measured.
 
 One scorecard uses one currency and one minor-unit scale. Currency conversion is outside the SDK.

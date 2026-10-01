@@ -1,0 +1,14 @@
+{
+  "accountId": "demo-account",
+  "period": {
+    "start": "2026-08-21T00:00:00.000Z",
+    "end": "2026-08-28T00:00:00.000Z"
+  },
+  "valuation": {
+    "currency": "USD",
+    "currencyMinorUnitScale": 2,
+    "hourlyValueMinor": "10000",
+    "serviceCostMinor": "25000"
+  },
+  "locale": "en"
+}

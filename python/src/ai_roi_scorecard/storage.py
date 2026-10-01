@@ -14,6 +14,10 @@ from .models import EvidenceEvent, ScorecardSnapshot, ValuePolicy
 
 event_adapter: TypeAdapter[EvidenceEvent] = TypeAdapter(EvidenceEvent)
 
+def _evidence_payload(event: EvidenceEvent) -> str:
+    return canonical_json(event.model_dump(by_alias=True, exclude_none=True, exclude={"sequence"}))
+
+
 SQLITE_MIGRATION = """
 CREATE TABLE IF NOT EXISTS roi_account_cursors (
   account_id TEXT PRIMARY KEY,
@@ -74,7 +78,7 @@ class SqliteScorecardRepository:
     def __init__(self, database: str | sqlite3.Connection = ":memory:") -> None:
         self._owns_connection = isinstance(database, str)
         self._connection = (
-            sqlite3.connect(database, check_same_thread=False)
+            sqlite3.connect(database, timeout=30, check_same_thread=False)
             if isinstance(database, str)
             else database
         )
@@ -90,6 +94,12 @@ class SqliteScorecardRepository:
             self._connection.close()
 
     def append(self, events: list[EvidenceEvent]) -> list[EvidenceEvent]:
+        return self._append(events, False)
+
+    def append_if_absent(self, events: list[EvidenceEvent]) -> list[EvidenceEvent]:
+        return self._append(events, True)
+
+    def _append(self, events: list[EvidenceEvent], skip_identical: bool) -> list[EvidenceEvent]:
         if not events:
             return []
         validated = [event_adapter.validate_python(event) for event in events]
@@ -109,6 +119,12 @@ class SqliteScorecardRepository:
                 sequence = int(row["sequence"])
                 stored: list[EvidenceEvent] = []
                 for event in validated:
+                    if skip_identical:
+                        existing = self._connection.execute("SELECT event_json FROM roi_evidence_events WHERE account_id = ? AND event_id = ?", (account_id, event.event_id)).fetchone()
+                        if existing is not None:
+                            if _evidence_payload(event_adapter.validate_python(json.loads(existing["event_json"]))) != _evidence_payload(event):
+                                raise ValueError("Conflicting evidence for an existing event ID")
+                            continue
                     sequence += 1
                     sequenced = event_adapter.validate_python(
                         {**event.model_dump(by_alias=True, exclude_none=True), "sequence": str(sequence)}
@@ -229,6 +245,12 @@ class PostgresScorecardRepository:
         return None
 
     def append(self, events: list[EvidenceEvent]) -> list[EvidenceEvent]:
+        return self._append(events, False)
+
+    def append_if_absent(self, events: list[EvidenceEvent]) -> list[EvidenceEvent]:
+        return self._append(events, True)
+
+    def _append(self, events: list[EvidenceEvent], skip_identical: bool) -> list[EvidenceEvent]:
         if not events:
             return []
         validated = [event_adapter.validate_python(event) for event in events]
@@ -248,6 +270,13 @@ class PostgresScorecardRepository:
                 sequence = int(cursor.fetchone()[0])
                 stored: list[EvidenceEvent] = []
                 for event in validated:
+                    if skip_identical:
+                        cursor.execute("SELECT event_json FROM roi_evidence_events WHERE account_id = %s AND event_id = %s", (account_id, event.event_id))
+                        existing = cursor.fetchone()
+                        if existing is not None:
+                            if _evidence_payload(event_adapter.validate_python(existing[0])) != _evidence_payload(event):
+                                raise ValueError("Conflicting evidence for an existing event ID")
+                            continue
                     sequence += 1
                     sequenced = event_adapter.validate_python(
                         {**event.model_dump(by_alias=True, exclude_none=True), "sequence": str(sequence)}

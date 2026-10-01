@@ -1,19 +1,50 @@
 import { z } from "zod";
 
-export const SCHEMA_VERSION = 1 as const;
-export const RENDERER_VERSION = "1.2.0" as const;
+export const SCHEMA_VERSION = 2 as const;
+export const RENDERER_VERSION = "2.0.0" as const;
 
-export const DecimalIntegerStringSchema = z.string().regex(/^-?(0|[1-9]\d*)$/);
-export const NonNegativeIntegerStringSchema = z.string().regex(/^(0|[1-9]\d*)$/);
-export const IsoDateTimeSchema = z.string().datetime({ offset: true });
+export const MAX_GENERATION_EVENTS = 10_000;
+export const MAX_GENERATION_POLICIES = 1_000;
+export const MAX_ESTIMATE_WORKFLOWS = 1_000;
+export const MAX_TRANSLATIONS = 32;
+export const MAX_IDENTIFIER_LENGTH = 256;
+export const MAX_LABEL_LENGTH = 512;
+export const MAX_LOCALE_LENGTH = 64;
+export const MAX_INTEGER_STRING_LENGTH = 128;
+export const MAX_DERIVED_INTEGER_STRING_LENGTH = 160;
+export const MAX_INPUT_INTEGER = 1_000_000_000;
+export const MAX_EVIDENCE_ISSUES = 120_000;
+export const MAX_EVIDENCE_ISSUE_LENGTH = 1_024;
+
+const IdentifierSchema = z.string().min(1).max(MAX_IDENTIFIER_LENGTH);
+const LabelSchema = z.string().min(1).max(MAX_LABEL_LENGTH);
+const LocaleSchema = z.string().min(2).max(MAX_LOCALE_LENGTH);
+
+export const DecimalIntegerStringSchema = z
+  .string()
+  .max(MAX_INTEGER_STRING_LENGTH + 1)
+  .regex(/^-?(0|[1-9]\d*)$/);
+export const NonNegativeIntegerStringSchema = z
+  .string()
+  .max(MAX_INTEGER_STRING_LENGTH)
+  .regex(/^(0|[1-9]\d*)$/);
+const DerivedDecimalIntegerStringSchema = z
+  .string()
+  .max(MAX_DERIVED_INTEGER_STRING_LENGTH + 1)
+  .regex(/^-?(0|[1-9]\d*)$/);
+const DerivedNonNegativeIntegerStringSchema = z
+  .string()
+  .max(MAX_DERIVED_INTEGER_STRING_LENGTH)
+  .regex(/^(0|[1-9]\d*)$/);
+export const IsoDateTimeSchema = z.string().max(64).datetime({ offset: true }).refine((value) => Number.isFinite(Date.parse(value)) && Number(value.slice(0, 4)) > 0, "Invalid timestamp");
 
 const EventBaseFields = {
-  eventId: z.string().min(1),
-  accountId: z.string().min(1),
-  runId: z.string().min(1),
-  attemptId: z.string().min(1),
-  workflowKey: z.string().min(1),
-  policyKey: z.string().min(1),
+  eventId: IdentifierSchema,
+  accountId: IdentifierSchema,
+  runId: IdentifierSchema,
+  attemptId: IdentifierSchema,
+  workflowKey: IdentifierSchema,
+  policyKey: IdentifierSchema,
   occurredAt: IsoDateTimeSchema,
   sequence: NonNegativeIntegerStringSchema.optional(),
 };
@@ -27,42 +58,42 @@ export const AttemptFinishedEventSchema = z.object({
   ...EventBaseFields,
   type: z.literal("attempt_finished"),
   status: z.enum(["succeeded", "failed", "cancelled", "abandoned"]),
-  activeDurationMs: z.number().int().nonnegative(),
+  activeDurationMs: z.number().int().nonnegative().max(MAX_INPUT_INTEGER).optional(),
 });
 
 export const OutcomeCompletedEventSchema = z.object({
   ...EventBaseFields,
   type: z.literal("outcome_completed"),
-  outcomeId: z.string().min(1),
-  units: z.number().int().positive().default(1),
+  outcomeId: IdentifierSchema,
+  units: z.number().int().positive().max(MAX_INPUT_INTEGER).default(1),
 });
 
 export const ExceptionRecordedEventSchema = z.object({
   ...EventBaseFields,
   type: z.literal("exception_recorded"),
-  exceptionId: z.string().min(1),
-  category: z.string().min(1),
+  exceptionId: IdentifierSchema,
+  category: IdentifierSchema,
   safeMessage: z.string().max(280).optional(),
 });
 
 export const ApprovalRequestedEventSchema = z.object({
   ...EventBaseFields,
   type: z.literal("approval_requested"),
-  approvalId: z.string().min(1),
-  category: z.string().min(1),
+  approvalId: IdentifierSchema,
+  category: IdentifierSchema,
 });
 
 export const ResolutionRecordedEventSchema = z.object({
   ...EventBaseFields,
   type: z.literal("resolution_recorded"),
-  exceptionId: z.string().min(1),
+  exceptionId: IdentifierSchema,
   resolution: z.string().min(1).max(280),
 });
 
 export const CorrectionAppendedEventSchema = z.object({
   ...EventBaseFields,
   type: z.literal("correction_appended"),
-  targetEventId: z.string().min(1),
+  targetEventId: IdentifierSchema,
   action: z.literal("void"),
   reason: z.string().min(1).max(280),
 });
@@ -78,21 +109,26 @@ export const EvidenceEventSchema = z.discriminatedUnion("type", [
 ]);
 
 export const LocalizedLabelSchema = z.object({
-  default: z.string().min(1),
-  translations: z.record(z.string(), z.string().min(1)).default({}),
+  default: LabelSchema,
+  translations: z
+    .record(LocaleSchema, LabelSchema)
+    .refine((translations) => Object.keys(translations).length <= MAX_TRANSLATIONS, {
+      message: `No more than ${MAX_TRANSLATIONS} translations are allowed`,
+    })
+    .default({}),
 });
 
 export const ValuePolicySchema = z
   .object({
-    policyKey: z.string().min(1),
-    version: z.number().int().positive(),
+    policyKey: IdentifierSchema,
+    version: z.number().int().positive().max(MAX_INPUT_INTEGER),
     scope: z.enum(["default", "account"]),
-    accountId: z.string().min(1).optional(),
+    accountId: IdentifierSchema.optional(),
     label: LocalizedLabelSchema,
-    manualMinutesPerUnit: z.number().int().nonnegative(),
+    manualMinutesPerUnit: z.number().int().nonnegative().max(MAX_INPUT_INTEGER),
     evidenceLevel: z.enum(["measured", "approved_baseline"]),
     effectiveFrom: IsoDateTimeSchema,
-    effectiveTo: IsoDateTimeSchema.nullish(),
+    effectiveTo: IsoDateTimeSchema.nullish().transform((value) => value ?? undefined).optional(),
   })
   .superRefine((policy, context) => {
     if (policy.scope === "account" && !policy.accountId) {
@@ -139,72 +175,72 @@ export const ReportPeriodSchema = z
   });
 
 export const GenerationInputSchema = z.object({
-  accountId: z.string().min(1),
-  locale: z.string().min(2).default("en"),
+  accountId: IdentifierSchema,
+  locale: LocaleSchema.default("en"),
   period: ReportPeriodSchema,
   generatedAt: IsoDateTimeSchema,
   evidenceWatermark: NonNegativeIntegerStringSchema.optional(),
-  events: z.array(EvidenceEventSchema),
-  policies: z.array(ValuePolicySchema),
+  events: z.array(EvidenceEventSchema).max(MAX_GENERATION_EVENTS),
+  policies: z.array(ValuePolicySchema).max(MAX_GENERATION_POLICIES),
   valuation: ValuationContextSchema,
 });
 
 export const EstimateWorkflowSchema = z.object({
-  workflowKey: z.string().min(1),
-  label: z.string().min(1),
-  manualMinutes: z.number().int().nonnegative(),
-  units: z.number().int().positive().default(1),
-  aiDurationMs: z.number().int().nonnegative().optional(),
-  valueGroupKey: z.string().min(1).optional(),
-  valueGroupLabel: z.string().min(1).optional(),
+  workflowKey: IdentifierSchema,
+  label: LabelSchema,
+  manualMinutes: z.number().int().nonnegative().max(MAX_INPUT_INTEGER),
+  units: z.number().int().positive().max(MAX_INPUT_INTEGER).default(1),
+  aiDurationMs: z.number().int().nonnegative().max(MAX_INPUT_INTEGER).optional(),
+  valueGroupKey: IdentifierSchema.optional(),
+  valueGroupLabel: LabelSchema.optional(),
   hourlyValueMinor: NonNegativeIntegerStringSchema.optional(),
 });
 
 export const EstimateInputSchema = z.object({
-  accountId: z.string().min(1).default("illustrative"),
-  locale: z.string().min(2).default("en"),
+  accountId: IdentifierSchema.default("illustrative"),
+  locale: LocaleSchema.default("en"),
   period: ReportPeriodSchema,
   generatedAt: IsoDateTimeSchema,
-  workflows: z.array(EstimateWorkflowSchema),
+  workflows: z.array(EstimateWorkflowSchema).max(MAX_ESTIMATE_WORKFLOWS),
   valuation: ValuationContextSchema,
 });
 
 export const ScorecardLineItemSchema = z.object({
-  workflowKey: z.string(),
-  policyKey: z.string(),
+  workflowKey: IdentifierSchema,
+  policyKey: IdentifierSchema,
   policyVersion: z.number().int().positive().nullable(),
-  label: z.string(),
+  label: LabelSchema,
   units: z.number().int().nonnegative(),
-  manualMinutes: NonNegativeIntegerStringSchema,
-  aiDurationMs: NonNegativeIntegerStringSchema,
-  runtimeMeasurement: z.enum(["measured", "not_provided"]),
-  valueGroupKey: z.string().nullable(),
-  valueGroupLabel: z.string().nullable(),
+  manualMinutes: DerivedNonNegativeIntegerStringSchema,
+  aiDurationMs: DerivedNonNegativeIntegerStringSchema,
+  runtimeMeasurement: z.enum(["measured", "partial", "not_provided"]),
+  valueGroupKey: IdentifierSchema.nullable(),
+  valueGroupLabel: LabelSchema.nullable(),
   hourlyValueMinor: NonNegativeIntegerStringSchema,
-  estimatedValueMinor: NonNegativeIntegerStringSchema,
+  estimatedValueMinor: DerivedNonNegativeIntegerStringSchema,
   evidenceLevel: z.enum(["measured", "approved_baseline", "illustrative"]),
 });
 
 export const ScorecardTotalsSchema = z.object({
   completedOutcomes: z.number().int().nonnegative(),
-  manualMinutes: NonNegativeIntegerStringSchema,
-  aiDurationMs: NonNegativeIntegerStringSchema,
-  timeSavedMs: DecimalIntegerStringSchema,
-  estimatedValueMinor: NonNegativeIntegerStringSchema,
+  manualMinutes: DerivedNonNegativeIntegerStringSchema,
+  aiDurationMs: DerivedNonNegativeIntegerStringSchema,
+  timeSavedMs: DerivedDecimalIntegerStringSchema.nullable(),
+  estimatedValueMinor: DerivedNonNegativeIntegerStringSchema,
   serviceCostMinor: NonNegativeIntegerStringSchema.optional(),
-  netValueMinor: DecimalIntegerStringSchema.optional(),
-  roiBasisPoints: DecimalIntegerStringSchema.optional(),
-  valueToCostBasisPoints: NonNegativeIntegerStringSchema.optional(),
+  netValueMinor: DerivedDecimalIntegerStringSchema.optional(),
+  roiBasisPoints: DerivedDecimalIntegerStringSchema.optional(),
+  valueToCostBasisPoints: DerivedNonNegativeIntegerStringSchema.optional(),
   exceptions: z.number().int().nonnegative(),
   unresolvedExceptions: z.number().int().nonnegative(),
   approvalsRequested: z.number().int().nonnegative(),
 });
 
 export const ScorecardSnapshotSchema = z.object({
-  schemaVersion: z.literal(SCHEMA_VERSION),
+  schemaVersion: z.union([z.literal(1), z.literal(SCHEMA_VERSION)]),
   mode: z.enum(["audited", "illustrative"]),
-  accountId: z.string(),
-  locale: z.string(),
+  accountId: IdentifierSchema,
+  locale: LocaleSchema,
   period: ReportPeriodSchema,
   generatedAt: IsoDateTimeSchema,
   evidenceWatermark: NonNegativeIntegerStringSchema.optional(),
@@ -212,11 +248,20 @@ export const ScorecardSnapshotSchema = z.object({
   currencyMinorUnitScale: z.number().int().min(0).max(4),
   runtimeMeasurement: z.enum(["measured", "partial", "not_provided"]),
   status: z.enum(["ready", "send_not_recommended", "needs_attention"]),
-  lineItems: z.array(ScorecardLineItemSchema),
+  lineItems: z.array(ScorecardLineItemSchema).max(MAX_GENERATION_EVENTS),
   totals: ScorecardTotalsSchema,
-  evidenceIssues: z.array(z.string()),
+  evidenceIssues: z
+    .array(z.string().max(MAX_EVIDENCE_ISSUE_LENGTH))
+    .max(MAX_EVIDENCE_ISSUES),
   sourceFingerprint: z.string().length(64),
   snapshotHash: z.string().length(64),
+}).superRefine((snapshot, context) => {
+  if (snapshot.schemaVersion === 1 && (snapshot.totals.timeSavedMs === null || snapshot.lineItems.some((line) => line.runtimeMeasurement === "partial"))) {
+    context.addIssue({ code: "custom", message: "Invalid legacy v1 snapshot" });
+  }
+  if (snapshot.schemaVersion === 2 && ((snapshot.runtimeMeasurement === "measured") !== (snapshot.totals.timeSavedMs !== null))) {
+    context.addIssue({ code: "custom", message: "Time saved requires fully measured runtime" });
+  }
 });
 
 export type EvidenceEvent = z.infer<typeof EvidenceEventSchema>;

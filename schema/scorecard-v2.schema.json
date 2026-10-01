@@ -1,0 +1,1503 @@
+{
+  "$defs": {
+    "ApprovalRequestedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "approvalId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "category": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Category",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "approval_requested",
+          "default": "approval_requested",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "approvalId",
+        "category"
+      ],
+      "title": "ApprovalRequestedEvent",
+      "type": "object"
+    },
+    "AttemptFinishedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "activeDurationMs": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "le": 1000000000,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Activedurationms"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "status": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled",
+            "abandoned"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "type": {
+          "const": "attempt_finished",
+          "default": "attempt_finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "status"
+      ],
+      "title": "AttemptFinishedEvent",
+      "type": "object"
+    },
+    "AttemptStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "attempt_started",
+          "default": "attempt_started",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt"
+      ],
+      "title": "AttemptStartedEvent",
+      "type": "object"
+    },
+    "CorrectionAppendedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "action": {
+          "const": "void",
+          "default": "void",
+          "title": "Action",
+          "type": "string"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 280,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "targetEventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Targeteventid",
+          "type": "string"
+        },
+        "type": {
+          "const": "correction_appended",
+          "default": "correction_appended",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "targetEventId",
+        "reason"
+      ],
+      "title": "CorrectionAppendedEvent",
+      "type": "object"
+    },
+    "EstimateInput": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "default": "illustrative",
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "generatedAt": {
+          "maxLength": 64,
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "locale": {
+          "default": "en",
+          "maxLength": 64,
+          "minLength": 2,
+          "title": "Locale",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "#/$defs/ReportPeriod"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationContext"
+        },
+        "workflows": {
+          "items": {
+            "$ref": "#/$defs/EstimateWorkflow"
+          },
+          "maxItems": 1000,
+          "title": "Workflows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "period",
+        "generatedAt",
+        "workflows",
+        "valuation"
+      ],
+      "title": "EstimateInput",
+      "type": "object"
+    },
+    "EstimateWorkflow": {
+      "additionalProperties": false,
+      "properties": {
+        "aiDurationMs": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "le": 1000000000,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aidurationms"
+        },
+        "hourlyValueMinor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hourlyvalueminor"
+        },
+        "label": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "manualMinutes": {
+          "maximum": 1000000000,
+          "minimum": 0,
+          "title": "Manualminutes",
+          "type": "integer"
+        },
+        "units": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000,
+          "title": "Units",
+          "type": "integer"
+        },
+        "valueGroupKey": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuegroupkey"
+        },
+        "valueGroupLabel": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuegrouplabel"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowKey",
+        "label",
+        "manualMinutes"
+      ],
+      "title": "EstimateWorkflow",
+      "type": "object"
+    },
+    "ExceptionRecordedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "category": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Category",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "exceptionId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Exceptionid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "safeMessage": {
+          "anyOf": [
+            {
+              "maxLength": 280,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Safemessage"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "exception_recorded",
+          "default": "exception_recorded",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "exceptionId",
+        "category"
+      ],
+      "title": "ExceptionRecordedEvent",
+      "type": "object"
+    },
+    "GenerationInput": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "events": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "approval_requested": "#/$defs/ApprovalRequestedEvent",
+                "attempt_finished": "#/$defs/AttemptFinishedEvent",
+                "attempt_started": "#/$defs/AttemptStartedEvent",
+                "correction_appended": "#/$defs/CorrectionAppendedEvent",
+                "exception_recorded": "#/$defs/ExceptionRecordedEvent",
+                "outcome_completed": "#/$defs/OutcomeCompletedEvent",
+                "resolution_recorded": "#/$defs/ResolutionRecordedEvent"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/AttemptStartedEvent"
+              },
+              {
+                "$ref": "#/$defs/AttemptFinishedEvent"
+              },
+              {
+                "$ref": "#/$defs/OutcomeCompletedEvent"
+              },
+              {
+                "$ref": "#/$defs/ExceptionRecordedEvent"
+              },
+              {
+                "$ref": "#/$defs/ApprovalRequestedEvent"
+              },
+              {
+                "$ref": "#/$defs/ResolutionRecordedEvent"
+              },
+              {
+                "$ref": "#/$defs/CorrectionAppendedEvent"
+              }
+            ]
+          },
+          "maxItems": 10000,
+          "title": "Events",
+          "type": "array"
+        },
+        "evidenceWatermark": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidencewatermark"
+        },
+        "generatedAt": {
+          "maxLength": 64,
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "locale": {
+          "default": "en",
+          "maxLength": 64,
+          "minLength": 2,
+          "title": "Locale",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "#/$defs/ReportPeriod"
+        },
+        "policies": {
+          "items": {
+            "$ref": "#/$defs/ValuePolicy"
+          },
+          "maxItems": 1000,
+          "title": "Policies",
+          "type": "array"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationContext"
+        }
+      },
+      "required": [
+        "accountId",
+        "period",
+        "generatedAt",
+        "events",
+        "policies",
+        "valuation"
+      ],
+      "title": "GenerationInput",
+      "type": "object"
+    },
+    "LocalizedLabel": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Default",
+          "type": "string"
+        },
+        "translations": {
+          "additionalProperties": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxProperties": 32,
+          "propertyNames": {
+            "maxLength": 64,
+            "minLength": 2
+          },
+          "title": "Translations",
+          "type": "object"
+        }
+      },
+      "required": [
+        "default"
+      ],
+      "title": "LocalizedLabel",
+      "type": "object"
+    },
+    "OutcomeCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "outcomeId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Outcomeid",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "outcome_completed",
+          "default": "outcome_completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "units": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000,
+          "title": "Units",
+          "type": "integer"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "outcomeId"
+      ],
+      "title": "OutcomeCompletedEvent",
+      "type": "object"
+    },
+    "ReportPeriod": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "maxLength": 64,
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "maxLength": 64,
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "ReportPeriod",
+      "type": "object"
+    },
+    "ResolutionRecordedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "attemptId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "eventId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Eventid",
+          "type": "string"
+        },
+        "exceptionId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Exceptionid",
+          "type": "string"
+        },
+        "occurredAt": {
+          "maxLength": 64,
+          "title": "Occurredat",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "resolution": {
+          "maxLength": 280,
+          "minLength": 1,
+          "title": "Resolution",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Runid",
+          "type": "string"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "type": {
+          "const": "resolution_recorded",
+          "default": "resolution_recorded",
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "accountId",
+        "runId",
+        "attemptId",
+        "workflowKey",
+        "policyKey",
+        "occurredAt",
+        "exceptionId",
+        "resolution"
+      ],
+      "title": "ResolutionRecordedEvent",
+      "type": "object"
+    },
+    "ScorecardLineItem": {
+      "additionalProperties": false,
+      "properties": {
+        "aiDurationMs": {
+          "maxLength": 160,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Aidurationms",
+          "type": "string"
+        },
+        "estimatedValueMinor": {
+          "maxLength": 160,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Estimatedvalueminor",
+          "type": "string"
+        },
+        "evidenceLevel": {
+          "enum": [
+            "measured",
+            "approved_baseline",
+            "illustrative"
+          ],
+          "title": "Evidencelevel",
+          "type": "string"
+        },
+        "hourlyValueMinor": {
+          "maxLength": 128,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Hourlyvalueminor",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "manualMinutes": {
+          "maxLength": 160,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Manualminutes",
+          "type": "string"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "policyVersion": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Policyversion"
+        },
+        "runtimeMeasurement": {
+          "enum": [
+            "measured",
+            "partial",
+            "not_provided"
+          ],
+          "title": "Runtimemeasurement",
+          "type": "string"
+        },
+        "units": {
+          "minimum": 0,
+          "title": "Units",
+          "type": "integer"
+        },
+        "valueGroupKey": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valuegroupkey"
+        },
+        "valueGroupLabel": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valuegrouplabel"
+        },
+        "workflowKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Workflowkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowKey",
+        "policyKey",
+        "policyVersion",
+        "label",
+        "units",
+        "manualMinutes",
+        "aiDurationMs",
+        "runtimeMeasurement",
+        "valueGroupKey",
+        "valueGroupLabel",
+        "hourlyValueMinor",
+        "estimatedValueMinor",
+        "evidenceLevel"
+      ],
+      "title": "ScorecardLineItem",
+      "type": "object"
+    },
+    "ScorecardSnapshot": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "totals": {
+                "properties": {
+                  "timeSavedMs": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "runtimeMeasurement": {
+                "const": "measured"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "totals": {
+                "properties": {
+                  "timeSavedMs": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "accountId": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Accountid",
+          "type": "string"
+        },
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "currencyMinorUnitScale": {
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Currencyminorunitscale",
+          "type": "integer"
+        },
+        "evidenceIssues": {
+          "items": {
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "maxItems": 120000,
+          "title": "Evidenceissues",
+          "type": "array"
+        },
+        "evidenceWatermark": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidencewatermark"
+        },
+        "generatedAt": {
+          "maxLength": 64,
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "lineItems": {
+          "items": {
+            "$ref": "#/$defs/ScorecardLineItem"
+          },
+          "maxItems": 10000,
+          "title": "Lineitems",
+          "type": "array"
+        },
+        "locale": {
+          "maxLength": 64,
+          "minLength": 2,
+          "title": "Locale",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "audited",
+            "illustrative"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "#/$defs/ReportPeriod"
+        },
+        "runtimeMeasurement": {
+          "enum": [
+            "measured",
+            "partial",
+            "not_provided"
+          ],
+          "title": "Runtimemeasurement",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": 2,
+          "title": "Schemaversion",
+          "type": "integer"
+        },
+        "snapshotHash": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Snapshothash",
+          "type": "string"
+        },
+        "sourceFingerprint": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Sourcefingerprint",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "send_not_recommended",
+            "needs_attention"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "totals": {
+          "$ref": "#/$defs/ScorecardTotals"
+        }
+      },
+      "required": [
+        "mode",
+        "accountId",
+        "locale",
+        "period",
+        "generatedAt",
+        "currency",
+        "currencyMinorUnitScale",
+        "runtimeMeasurement",
+        "status",
+        "lineItems",
+        "totals",
+        "evidenceIssues",
+        "sourceFingerprint",
+        "snapshotHash"
+      ],
+      "title": "ScorecardSnapshot",
+      "type": "object"
+    },
+    "ScorecardTotals": {
+      "additionalProperties": false,
+      "properties": {
+        "aiDurationMs": {
+          "maxLength": 160,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Aidurationms",
+          "type": "string"
+        },
+        "approvalsRequested": {
+          "minimum": 0,
+          "title": "Approvalsrequested",
+          "type": "integer"
+        },
+        "completedOutcomes": {
+          "minimum": 0,
+          "title": "Completedoutcomes",
+          "type": "integer"
+        },
+        "estimatedValueMinor": {
+          "maxLength": 160,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Estimatedvalueminor",
+          "type": "string"
+        },
+        "exceptions": {
+          "minimum": 0,
+          "title": "Exceptions",
+          "type": "integer"
+        },
+        "manualMinutes": {
+          "maxLength": 160,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Manualminutes",
+          "type": "string"
+        },
+        "netValueMinor": {
+          "anyOf": [
+            {
+              "maxLength": 161,
+              "pattern": "^-?(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Netvalueminor"
+        },
+        "roiBasisPoints": {
+          "anyOf": [
+            {
+              "maxLength": 161,
+              "pattern": "^-?(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Roibasispoints"
+        },
+        "serviceCostMinor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Servicecostminor"
+        },
+        "timeSavedMs": {
+          "anyOf": [
+            {
+              "maxLength": 161,
+              "pattern": "^-?(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Timesavedms"
+        },
+        "unresolvedExceptions": {
+          "minimum": 0,
+          "title": "Unresolvedexceptions",
+          "type": "integer"
+        },
+        "valueToCostBasisPoints": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuetocostbasispoints"
+        }
+      },
+      "required": [
+        "completedOutcomes",
+        "manualMinutes",
+        "aiDurationMs",
+        "timeSavedMs",
+        "estimatedValueMinor",
+        "exceptions",
+        "unresolvedExceptions",
+        "approvalsRequested"
+      ],
+      "title": "ScorecardTotals",
+      "type": "object"
+    },
+    "ValuationContext": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "currencyMinorUnitScale": {
+          "default": 2,
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Currencyminorunitscale",
+          "type": "integer"
+        },
+        "hourlyValueMinor": {
+          "maxLength": 128,
+          "pattern": "^(0|[1-9][0-9]*)$",
+          "title": "Hourlyvalueminor",
+          "type": "string"
+        },
+        "serviceCostMinor": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Servicecostminor"
+        }
+      },
+      "required": [
+        "currency",
+        "hourlyValueMinor"
+      ],
+      "title": "ValuationContext",
+      "type": "object"
+    },
+    "ValuePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "accountId": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accountid"
+        },
+        "effectiveFrom": {
+          "maxLength": 64,
+          "title": "Effectivefrom",
+          "type": "string"
+        },
+        "effectiveTo": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effectiveto"
+        },
+        "evidenceLevel": {
+          "enum": [
+            "measured",
+            "approved_baseline"
+          ],
+          "title": "Evidencelevel",
+          "type": "string"
+        },
+        "label": {
+          "$ref": "#/$defs/LocalizedLabel"
+        },
+        "manualMinutesPerUnit": {
+          "maximum": 1000000000,
+          "minimum": 0,
+          "title": "Manualminutesperunit",
+          "type": "integer"
+        },
+        "policyKey": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Policykey",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "default",
+            "account"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "version": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "policyKey",
+        "version",
+        "scope",
+        "label",
+        "manualMinutesPerUnit",
+        "evidenceLevel",
+        "effectiveFrom"
+      ],
+      "title": "ValuePolicy",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/ekinburak/AI-ROI-Scorecard/schema/scorecard-v2.schema.json",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GenerationInput"
+    },
+    {
+      "$ref": "#/$defs/EstimateInput"
+    },
+    {
+      "$ref": "#/$defs/ScorecardSnapshot"
+    }
+  ],
+  "title": "AI ROI Scorecard schema v2"
+}
