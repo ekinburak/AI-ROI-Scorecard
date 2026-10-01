@@ -5,7 +5,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -27,6 +27,10 @@ from .storage import SqliteScorecardRepository
 MAX_INPUT_BYTES = 16 * 1024 * 1024
 
 
+def _reject_json_constant(value: str) -> NoReturn:
+    raise ValueError("JSON cannot contain non-finite numbers")
+
+
 def _read_json(path: str) -> Any:
     if path == "-":
         data = sys.stdin.buffer.read(MAX_INPUT_BYTES + 1)
@@ -35,7 +39,7 @@ def _read_json(path: str) -> Any:
             data = stream.read(MAX_INPUT_BYTES + 1)
     if len(data) > MAX_INPUT_BYTES:
         raise ValueError("Input exceeds 16 MiB")
-    return json.loads(data)
+    return json.loads(data.decode("utf-8-sig"), parse_constant=_reject_json_constant)
 
 
 def _mapping(raw: Any, account: str, mode: str) -> TelemetryMapping:

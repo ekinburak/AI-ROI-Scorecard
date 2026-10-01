@@ -88,6 +88,9 @@ try {
     const wrongAccount = [...ingest]; wrongAccount[4] = "other";
     cli(wrongAccount,{status:2});
     const otlp = JSON.parse(readFileSync(fixture("golden-otlp.input.json"),"utf8"));
+    const invalidJson = structuredClone(otlp);
+    invalidJson.resourceSpans[0].scopeSpans[0].spans[0].attributes.push({key:"irrelevant",value:{doubleValue:0}});
+    cli(["ingest","--db",db,"--account","demo-account","--input","-","--input-format","otlp"], {input:JSON.stringify(invalidJson).replace('"doubleValue":0','"doubleValue":NaN'),status:2});
     const privateAccount = structuredClone(otlp);
     privateAccount.resourceSpans[0].scopeSpans[0].spans[0].attributes.find((attribute) => attribute.key === "roi.account_id").value.stringValue = "other@example.test";
     cli(["ingest","--db",db,"--account","demo-account","--input","-","--input-format","otlp"], {input:JSON.stringify(privateAccount),status:2});
