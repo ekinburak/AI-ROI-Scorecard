@@ -116,6 +116,10 @@ def run_cli(argv: list[str] | None = None) -> int:
             spans = parse_otlp_json(payload) if args.input_format == "otlp" else parse_json_records(payload)
             if any((account := read_semantic_string(span.attributes, "roi.account_id")) is not None and account != args.account for span in spans):
                 raise ValueError("Telemetry account conflicts with --account")
+            records = payload if args.input_format == "json" else [span for resource in payload.get("resourceSpans", []) for scope in resource.get("scopeSpans", []) for span in scope.get("spans", [])]
+            accounts = [record["attributes"]["roi.account_id"] for record in records if "roi.account_id" in record.get("attributes", {})] if args.input_format == "json" else [next(iter(attribute["value"].values()), None) for record in records for attribute in record.get("attributes", []) if attribute["key"] == "roi.account_id"]
+            if any(not isinstance(account, str) or account.strip() != args.account for account in accounts):
+                raise ValueError("Telemetry account conflicts with --account")
             events = TelemetryEvidenceMapper(config).map_spans(spans)
             data_phase = False
             repository = SqliteScorecardRepository(args.db)
@@ -132,8 +136,8 @@ def run_cli(argv: list[str] | None = None) -> int:
             repository = SqliteScorecardRepository(args.db)
             repository.migrate()
             known = {}
-            for policy in policies:
-                for stored in repository.get_policies(policy.account_id or ""):
+            for account_id in {policy.account_id or "" for policy in policies}:
+                for stored in repository.get_policies(account_id):
                     key = (stored.policy_key, stored.version, stored.scope, stored.account_id or "")
                     known[key] = canonical_json(stored)
             for policy in policies:

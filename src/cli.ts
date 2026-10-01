@@ -114,6 +114,12 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
         const config = MappingSchema.parse(values.mapping ? await readJson(values.mapping) : {});
         const spans = inputFormat === "otlp" ? parseOtlpJson(payload as Parameters<typeof parseOtlpJson>[0]) : parseJsonRecords(payload as JsonTelemetryRecord[]);
         if (spans.some((span) => { const id = readSemanticString(span.attributes,"roi.account_id"); return id !== undefined && id !== accountId; })) throw new TypeError("Telemetry account conflicts with --account");
+        // Check account tags before attribute sanitization can remove private-looking values.
+        const records = inputFormat === "json" ? payload as JsonTelemetryRecord[] : (payload as any).resourceSpans?.flatMap((resource: any) => resource.scopeSpans?.flatMap((scope: any) => scope.spans ?? []) ?? []) ?? [];
+        const accounts = inputFormat === "json"
+          ? records.flatMap((record: any) => record.attributes?.["roi.account_id"] === undefined ? [] : [record.attributes["roi.account_id"]])
+          : records.flatMap((record: any) => (record.attributes ?? []).filter((attribute: any) => attribute.key === "roi.account_id").map((attribute: any) => attribute.value.stringValue ?? attribute.value.intValue ?? attribute.value.doubleValue ?? attribute.value.boolValue));
+        if (accounts.some((id: unknown) => typeof id !== "string" || id.trim() !== accountId)) throw new TypeError("Telemetry account conflicts with --account");
         const events = new TelemetryEvidenceMapper(mapping(config, accountId, mode)).mapSpans(spans);
         repository = new SqliteScorecardRepository(db); await repository.migrate();
         const ingested = await ingestTelemetryEvidence(repository, events);
@@ -123,8 +129,8 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
         const policies = z.array(ValuePolicySchema).max(1000).parse(await readJson(required("input")));
         repository = new SqliteScorecardRepository(db); await repository.migrate();
         const known = new Map<string, string>();
-        for (const policy of policies) {
-          for (const stored of await repository.getPolicies(policy.accountId ?? "")) {
+        for (const account of new Set(policies.map((policy) => policy.accountId ?? ""))) {
+          for (const stored of await repository.getPolicies(account)) {
             known.set(JSON.stringify([stored.policyKey, stored.version, stored.scope, stored.accountId ?? ""]), canonicalJson(stored));
           }
         }
