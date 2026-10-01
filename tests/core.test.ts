@@ -4,16 +4,28 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  EstimateInputSchema,
+  GenerationInputSchema,
+  MAX_DERIVED_INTEGER_STRING_LENGTH,
+  MAX_ESTIMATE_WORKFLOWS,
+  MAX_GENERATION_EVENTS,
+  MAX_GENERATION_POLICIES,
+  MAX_IDENTIFIER_LENGTH,
+  MAX_INPUT_INTEGER,
+  MAX_INTEGER_STRING_LENGTH,
+  MAX_TRANSLATIONS,
+  RENDERER_VERSION,
   canonicalJson,
   estimateScorecard,
   generateScorecard,
   renderReport,
+  renderTextReport,
   sha256Canonical,
 } from "../src/index.js";
 
 const fixturePath = fileURLToPath(new URL("../fixtures/golden-v1.input.json", import.meta.url));
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as Record<string, unknown>;
-const expectedPath = fileURLToPath(new URL("../fixtures/golden-v1.expected.json", import.meta.url));
+const expectedPath = fileURLToPath(new URL("../fixtures/golden-v2.expected.json", import.meta.url));
 const expected = JSON.parse(readFileSync(expectedPath, "utf8")) as Record<string, unknown>;
 
 describe("scorecard generation", () => {
@@ -94,7 +106,7 @@ describe("scorecard generation", () => {
     });
     const report = renderReport(snapshot);
     expect(report.text).toContain("AI runtime: Not measured");
-    expect(report.text).toContain("Time difference: Available after instrumentation");
+    expect(report.text).toContain("Manual hours replaced:");
     expect(report.text).not.toContain("AI runtime: 0 sec");
     const valueFocusedReport = renderReport(snapshot, { includeRuntime: false });
     expect(valueFocusedReport.text).not.toContain("AI runtime");
@@ -158,7 +170,7 @@ describe("scorecard generation", () => {
     const snapshot = generateScorecard(input);
     expect(snapshot.status).toBe("needs_attention");
     expect(snapshot.runtimeMeasurement).toBe("partial");
-    expect(snapshot.evidenceIssues.join(" ")).toContain("no measured finish");
+    expect(snapshot.evidenceIssues.join(" ")).toContain("no finish event");
   });
 
   it("rejects incomplete lifecycles and accepts measured abandoned attempts", () => {
@@ -230,6 +242,82 @@ describe("scorecard generation", () => {
   });
 });
 
+describe("input limits", () => {
+  it("accepts collection maxima and rejects oversized collections", () => {
+    const input = structuredClone(fixture) as any;
+    input.events = Array(MAX_GENERATION_EVENTS).fill(input.events[0]);
+    input.policies = Array(MAX_GENERATION_POLICIES).fill(input.policies[0]);
+    expect(GenerationInputSchema.parse(input).events).toHaveLength(MAX_GENERATION_EVENTS);
+
+    input.events.push(input.events[0]);
+    expect(GenerationInputSchema.safeParse(input).success).toBe(false);
+    input.events.pop();
+    input.policies.push(input.policies[0]);
+    expect(GenerationInputSchema.safeParse(input).success).toBe(false);
+
+    const workflow = {
+      workflowKey: "support",
+      label: "Support",
+      manualMinutes: 1,
+    };
+    const estimate = {
+      period: input.period,
+      generatedAt: input.generatedAt,
+      workflows: Array(MAX_ESTIMATE_WORKFLOWS).fill(workflow),
+      valuation: input.valuation,
+    };
+    expect(EstimateInputSchema.parse(estimate).workflows).toHaveLength(MAX_ESTIMATE_WORKFLOWS);
+    estimate.workflows.push(workflow);
+    expect(EstimateInputSchema.safeParse(estimate).success).toBe(false);
+  });
+
+  it("rejects oversized scalar and translation inputs", () => {
+    const longIdentifier = structuredClone(fixture) as any;
+    longIdentifier.accountId = "a".repeat(MAX_IDENTIFIER_LENGTH + 1);
+    expect(GenerationInputSchema.safeParse(longIdentifier).success).toBe(false);
+
+    const hugeInteger = structuredClone(fixture) as any;
+    hugeInteger.valuation.hourlyValueMinor = "9".repeat(MAX_INTEGER_STRING_LENGTH + 1);
+    expect(GenerationInputSchema.safeParse(hugeInteger).success).toBe(false);
+
+    const translations = structuredClone(fixture) as any;
+    translations.policies[0].label.translations = Object.fromEntries(
+      Array.from({ length: MAX_TRANSLATIONS + 1 }, (_, index) => [`x-${index}`, "Label"]),
+    );
+    expect(GenerationInputSchema.safeParse(translations).success).toBe(false);
+
+    const numeric = structuredClone(fixture) as any;
+    numeric.events[1].activeDurationMs = MAX_INPUT_INTEGER + 1;
+    expect(GenerationInputSchema.safeParse(numeric).success).toBe(false);
+  });
+
+  it("keeps maximum accepted numeric inputs inside derived output limits", () => {
+    const snapshot = estimateScorecard({
+      period: { start: "2026-08-01T00:00:00.000Z", end: "2026-08-08T00:00:00.000Z" },
+      generatedAt: "2026-08-08T08:00:00.000Z",
+      workflows: [
+        {
+          workflowKey: "maximum",
+          label: "Maximum",
+          manualMinutes: MAX_INPUT_INTEGER,
+          units: MAX_INPUT_INTEGER,
+        },
+      ],
+      valuation: {
+        currency: "USD",
+        hourlyValueMinor: "9".repeat(MAX_INTEGER_STRING_LENGTH),
+        serviceCostMinor: "1",
+      },
+    });
+    expect(snapshot.totals.estimatedValueMinor.length).toBeLessThanOrEqual(
+      MAX_DERIVED_INTEGER_STRING_LENGTH,
+    );
+    expect(snapshot.totals.roiBasisPoints?.length).toBeLessThanOrEqual(
+      MAX_DERIVED_INTEGER_STRING_LENGTH,
+    );
+  });
+});
+
 describe("canonical reports", () => {
   it("sorts object keys and hashes deterministically", () => {
     expect(canonicalJson({ z: 1, a: { d: 2, b: 3 }, n: 10n })).toBe(
@@ -248,5 +336,48 @@ describe("canonical reports", () => {
     expect(report.html).toContain("Demo &amp; Co");
     expect(report.text).toContain(snapshot.totals.estimatedValueMinor === "27500" ? "$275.00" : "");
     expect(report.artifactHash).toHaveLength(64);
+  });
+
+  it("encodes unsafe plain-text controls without changing printable Unicode or HTML escaping", () => {
+    const snapshot = estimateScorecard({
+      period: { start: "2026-08-01T00:00:00.000Z", end: "2026-08-08T00:00:00.000Z" },
+      generatedAt: "2026-08-08T08:00:00.000Z",
+      workflows: [{ workflowKey: "task", label: "Task", manualMinutes: 1 }],
+      valuation: { currency: "USD", hourlyValueMinor: "100" },
+    });
+    const forged = structuredClone(snapshot) as any;
+    forged.lineItems[0].label = "<unsafe> مرحبا שלום\nSnapshot: forged\u001b]8;;https://example.test\u0007";
+    forged.evidenceIssues = ["Issue\r\nEstimated value: forged\u009B31m\u202E"];
+    const options = {
+      title: "Title\u2028Approvals requested: 999",
+      accountName: "Account\tInjected",
+      locale: "ar",
+    };
+    const text = renderTextReport(forged, options);
+    const report = renderReport(forged, options);
+
+    expect(RENDERER_VERSION).toBe("2.0.0");
+    const unsafeControl = [...text].find((character) => {
+      const codePoint = character.codePointAt(0) ?? -1;
+      return (
+        codePoint <= 0x0009 ||
+        (codePoint >= 0x000b && codePoint <= 0x001f) ||
+        (codePoint >= 0x007f && codePoint <= 0x009f) ||
+        codePoint === 0x061c ||
+        codePoint === 0x200e ||
+        codePoint === 0x200f ||
+        codePoint === 0x2028 ||
+        codePoint === 0x2029 ||
+        (codePoint >= 0x202a && codePoint <= 0x202e) ||
+        (codePoint >= 0x2066 && codePoint <= 0x2069)
+      );
+    });
+    expect(unsafeControl).toBeUndefined();
+    expect(text).toContain("مرحبا שלום");
+    expect(text).toContain("\\u000A");
+    expect(text).toContain("\\u001B");
+    expect(text).toContain("\\u202E");
+    expect(report.text).toBe(text);
+    expect(report.html).toContain("&lt;unsafe&gt; مرحبا שלום");
   });
 });

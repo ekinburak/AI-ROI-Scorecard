@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI ROI dashboard example</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #121212;
+        color: #faf9f6;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      p {
+        color: #868684;
+        font-size: 14px;
+      }
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Live CFO dashboard demo</h1>
+      <p>
+        Simulated work completes every few seconds. The dashboard updates when
+        <code>element.snapshot</code> changes.
+      </p>
+      <ai-roi-dashboard
+        id="dashboard"
+        audience="cfo"
+        period-state="open"
+        account-name="Example team"
+      ></ai-roi-dashboard>
+    </main>
+    <script type="importmap">
+      {
+        "imports": {
+          "zod": "https://cdn.jsdelivr.net/npm/zod@4.1.12/+esm"
+        }
+      }
+    </script>
+    <script type="module" src="./live-host.mjs"></script>
+  </body>
+</html>

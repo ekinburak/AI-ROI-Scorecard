@@ -1,4 +1,5 @@
 import { canonicalJson } from "../canonical.js";
+import { evidencePayload } from "./identity.js";
 import {
   EvidenceEventSchema,
   ScorecardSnapshotSchema,
@@ -73,6 +74,14 @@ export class PostgresScorecardRepository implements ScorecardRepository {
   }
 
   async append(eventsInput: EvidenceEvent[]): Promise<StoredEvidenceEvent[]> {
+    return this.#append(eventsInput, false);
+  }
+
+  async appendIfAbsent(eventsInput: EvidenceEvent[]): Promise<StoredEvidenceEvent[]> {
+    return this.#append(eventsInput, true);
+  }
+
+  async #append(eventsInput: EvidenceEvent[], skipIdentical: boolean): Promise<StoredEvidenceEvent[]> {
     if (eventsInput.length === 0) return [];
     const events = eventsInput.map((event) => EvidenceEventSchema.parse(event));
     const accountId = events[0]?.accountId;
@@ -93,6 +102,14 @@ export class PostgresScorecardRepository implements ScorecardRepository {
       let sequence = BigInt(cursor.rows[0]?.sequence ?? "0");
       const stored: StoredEvidenceEvent[] = [];
       for (const event of events) {
+        if (skipIdentical) {
+          const existing = await client.query<{ event_json: unknown }>("SELECT event_json FROM roi_evidence_events WHERE account_id = $1 AND event_id = $2", [accountId, event.eventId]);
+          const row = existing.rows[0];
+          if (row) {
+            if (evidencePayload(EvidenceEventSchema.parse(row.event_json)) !== evidencePayload(event)) throw new Error("Conflicting evidence for an existing event ID");
+            continue;
+          }
+        }
         sequence += 1n;
         const sequenced = EvidenceEventSchema.parse({ ...event, sequence: sequence.toString() });
         await client.query(

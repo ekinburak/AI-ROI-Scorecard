@@ -2,7 +2,11 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const requestedRoots = process.argv.slice(2).map((entry) => resolve(entry));
+const arguments_ = process.argv.slice(2);
+const requirePrivateTerms = arguments_.includes("--require-private-terms");
+const requestedRoots = arguments_
+  .filter((entry) => entry !== "--require-private-terms")
+  .map((entry) => resolve(entry));
 const roots = requestedRoots.length ? requestedRoots : [root];
 const excludedDirectories = new Set([
   ".git",
@@ -12,9 +16,9 @@ const excludedDirectories = new Set([
   ".venv",
   "__pycache__",
   "coverage",
-  "dist",
   "node_modules",
 ]);
+if (requestedRoots.length === 0) excludedDirectories.add("dist");
 const binaryExtensions = new Set([
   ".gif",
   ".gz",
@@ -40,15 +44,21 @@ const privateTerms = (process.env.PRIVATE_BOUNDARY_TERMS ?? "")
   .split("\n")
   .map((term) => term.trim())
   .filter(Boolean)
-  .map((term) => {
+  .flatMap((term) => {
     const word = term.startsWith("word:");
-    const value = word ? term.slice("word:".length) : term.replace(/^literal:/, "");
+    const value = (word ? term.slice("word:".length) : term.replace(/^literal:/, "")).trim();
+    if (!value) return [];
     const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return {
+    return [{
       value,
       pattern: word ? new RegExp(`(^|[^A-Za-z0-9_])${escaped}([^A-Za-z0-9_]|$)`, "i") : null,
-    };
+    }];
   });
+
+if (requirePrivateTerms && privateTerms.length === 0) {
+  console.error("Public boundary check requires at least one effective owner term.");
+  process.exit(1);
+}
 
 function filesBelow(path) {
   const stats = statSync(path);
@@ -61,14 +71,19 @@ function filesBelow(path) {
 
 const failures = [];
 for (const file of roots.flatMap(filesBelow)) {
-  if (binaryExtensions.has(extname(file).toLowerCase())) continue;
+  const displayPath = relative(root, file) || file;
+  if (binaryExtensions.has(extname(file).toLowerCase())) {
+    if (requestedRoots.length > 0) {
+      failures.push(`${displayPath}: opaque binary or nested archive`);
+    }
+    continue;
+  }
   let content;
   try {
     content = readFileSync(file, "utf8");
   } catch {
     continue;
   }
-  const displayPath = relative(root, file) || file;
   for (const { label, pattern } of genericPatterns) {
     if (pattern.test(content) || pattern.test(displayPath)) failures.push(`${displayPath}: ${label}`);
   }

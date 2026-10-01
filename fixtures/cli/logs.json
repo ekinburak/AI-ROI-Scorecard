@@ -1,0 +1,14 @@
+[
+  {
+    "id": "span-triage",
+    "name": "support-triage",
+    "startedAt": "2026-08-22T10:00:00.000Z",
+    "endedAt": "2026-08-22T10:00:01.200Z",
+    "status": "ok",
+    "attributes": {
+      "task": "ticket-triage",
+      "outcome": "ticket-42",
+      "count": 1
+    }
+  }
+]

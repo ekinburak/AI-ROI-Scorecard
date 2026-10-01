@@ -93,8 +93,6 @@ jobs:
 
   packages-and-boundary:
     runs-on: ubuntu-latest
-    env:
-      PRIVATE_BOUNDARY_TERMS: ${{ secrets.PRIVATE_BOUNDARY_TERMS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -109,32 +107,50 @@ jobs:
           python-version: "3.11"
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:boundary
+      - run: pnpm check:versions
       - run: pnpm pack --pack-destination artifacts
       - working-directory: python
         run: uv build --out-dir ../artifacts
       - run: |
-          mkdir -p /tmp/npm-package /tmp/python-package
+          mkdir -p /tmp/npm-package /tmp/python-wheel /tmp/python-sdist
           tar -xzf artifacts/*.tgz -C /tmp/npm-package
-          python -m zipfile -e artifacts/*.whl /tmp/python-package
-          node scripts/check-public-boundary.mjs /tmp/npm-package /tmp/python-package
-      - run: |
-          mkdir -p /tmp/npm-smoke
-          cd /tmp/npm-smoke
-          npm init -y >/dev/null
-          npm install "$GITHUB_WORKSPACE"/artifacts/*.tgz >/dev/null
-          node --input-type=module -e "import { estimateScorecard } from 'ai-roi-scorecard'; const result = estimateScorecard({ period: { start: '2026-01-01T00:00:00Z', end: '2026-01-08T00:00:00Z' }, generatedAt: '2026-01-08T00:00:00Z', workflows: [], valuation: { currency: 'USD', hourlyValueMinor: '0' } }); if (result.schemaVersion !== 1) process.exit(1)"
-      - run: |
-          uv venv /tmp/python-smoke
-          uv pip install --python /tmp/python-smoke/bin/python artifacts/*.whl
-          /tmp/python-smoke/bin/python -c "from ai_roi_scorecard import estimate_scorecard; result = estimate_scorecard({'period': {'start': '2026-01-01T00:00:00Z', 'end': '2026-01-08T00:00:00Z'}, 'generatedAt': '2026-01-08T00:00:00Z', 'workflows': [], 'valuation': {'currency': 'USD', 'hourlyValueMinor': '0'}}); assert result.schema_version == 1"
+          python -m zipfile -e artifacts/*.whl /tmp/python-wheel
+          tar -xzf artifacts/*.tar.gz -C /tmp/python-sdist
+          node scripts/check-public-boundary.mjs /tmp/npm-package /tmp/python-wheel /tmp/python-sdist
+      - run: pnpm test:packages
+        env:
+          SMOKE_PYTHON: "3.11"
       - uses: actions/upload-artifact@v4
         with:
           name: release-packages
           path: artifacts/
 
+  trusted-boundary:
+    if: github.event_name == 'push'
+    needs: packages-and-boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: artifacts
+      - name: Scan exact trusted artifacts
+        env:
+          PRIVATE_BOUNDARY_TERMS: ${{ secrets.PRIVATE_BOUNDARY_TERMS }}
+        run: |
+          mkdir -p /tmp/npm-package /tmp/python-wheel /tmp/python-sdist
+          tar -xzf artifacts/*.tgz -C /tmp/npm-package
+          python -m zipfile -e artifacts/*.whl /tmp/python-wheel
+          tar -xzf artifacts/*.tar.gz -C /tmp/python-sdist
+          node scripts/check-public-boundary.mjs --require-private-terms /tmp/npm-package /tmp/python-wheel /tmp/python-sdist
+
   ci-complete:
     if: always()
-    needs: [typescript, python, postgres, packages-and-boundary]
+    needs: [typescript, python, postgres, packages-and-boundary, trusted-boundary]
     runs-on: ubuntu-latest
     steps:
       - run: |
@@ -142,3 +158,6 @@ jobs:
           test "${{ needs.python.result }}" = success
           test "${{ needs.postgres.result }}" = success
           test "${{ needs.packages-and-boundary.result }}" = success
+          if [ "${{ github.event_name }}" = push ]; then
+            test "${{ needs.trusted-boundary.result }}" = success
+          fi

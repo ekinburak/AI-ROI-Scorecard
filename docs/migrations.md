@@ -1,18 +1,30 @@
-# Schema and migrations
+# Snapshot schema migration
 
-The wire format starts at `schemaVersion: 1`. TypeScript and Python share the schema in
-`schema/scorecard-v1.schema.json` and the fixtures in `fixtures/`.
+Version 0.2.0 generates snapshot schema **2**. The reader and repositories continue accepting
+schema **1** snapshots. Loading or rendering a historical snapshot preserves its wire values,
+source fingerprint, and snapshot hash; no database migration rewrites stored reports.
 
-Rules:
+Schema v2 changes:
 
-- Additive optional fields may ship in a minor release when old readers can ignore them.
-- Required-field changes, renamed fields, calculation changes, and hash-input changes require a
-  new schema version and a major package release after `1.0.0`.
-- Never rewrite stored snapshots. Read old versions through explicit migration or compatibility
-  functions.
-- Keep TypeScript and Python package versions synchronized.
-- A storage migration must preserve event sequence numbers, policy versions, source fingerprints,
-  and snapshot hashes.
+- `attempt_finished.activeDurationMs` may be omitted. Explicit `0` is a measured duration.
+- Snapshot and line runtime states are `measured`, `partial`, and `not_provided`.
+- `totals.timeSavedMs` is `null` unless all relevant runtime is measured and lifecycles are complete.
+- Completed outcomes remain eligible for approved baseline valuation without measured runtime.
+- New source fingerprints include schema version, locale, and generation timestamp. Different
+  presentation locales and generation instants can coexist at the same ledger watermark.
 
-The generic storage schema version is independent of the scorecard wire schema. Hosts using their
-own repository implementation own their database migrations.
+Consumers must branch on `runtimeMeasurement` and handle nullable savings. Show **Hours saved**
+only for `measured` runtime. For missing or partial runtime show **Manual hours replaced** and
+label any provided runtime as partial. Dollar values remain estimates based on approved manual
+baselines and hourly valuation, including when runtime is measured.
+
+No evidence-table migration is needed: events are stored as JSON. Previously stored measured
+finishes remain valid. The schema-v1 JSON schema stays available at
+[`schema/scorecard-v1.schema.json`](../schema/scorecard-v1.schema.json); the current shared schema
+is [`schema/scorecard-v2.schema.json`](../schema/scorecard-v2.schema.json).
+
+`append` remains strict about duplicate event IDs. Built-in repositories add atomic
+`appendIfAbsent` / `append_if_absent`: exact replays ignore assigned ledger sequence, conflicting
+payloads fail, and the whole batch rolls back. Custom repositories without that method use the
+adapter's compatibility fallback and **require a single writer**. Implement the atomic method
+before allowing concurrent ingest jobs against a custom repository.

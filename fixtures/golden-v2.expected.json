@@ -1,0 +1,65 @@
+{
+  "accountId": "demo-account",
+  "currency": "USD",
+  "currencyMinorUnitScale": 2,
+  "evidenceIssues": [],
+  "evidenceWatermark": "13",
+  "generatedAt": "2026-08-28T08:00:00.000Z",
+  "lineItems": [
+    {
+      "aiDurationMs": "2300",
+      "estimatedValueMinor": "12500",
+      "evidenceLevel": "measured",
+      "hourlyValueMinor": "10000",
+      "label": "Customer reply drafting",
+      "manualMinutes": "75",
+      "policyKey": "reply-draft",
+      "policyVersion": 2,
+      "runtimeMeasurement": "measured",
+      "units": 1,
+      "valueGroupKey": null,
+      "valueGroupLabel": null,
+      "workflowKey": "reply-draft"
+    },
+    {
+      "aiDurationMs": "1200",
+      "estimatedValueMinor": "15000",
+      "evidenceLevel": "approved_baseline",
+      "hourlyValueMinor": "10000",
+      "label": "Support ticket triage",
+      "manualMinutes": "90",
+      "policyKey": "ticket-triage",
+      "policyVersion": 1,
+      "runtimeMeasurement": "measured",
+      "units": 2,
+      "valueGroupKey": null,
+      "valueGroupLabel": null,
+      "workflowKey": "ticket-triage"
+    }
+  ],
+  "locale": "en",
+  "mode": "audited",
+  "period": {
+    "end": "2026-08-28T00:00:00.000Z",
+    "start": "2026-08-21T00:00:00.000Z"
+  },
+  "runtimeMeasurement": "measured",
+  "schemaVersion": 2,
+  "snapshotHash": "676c9cf32d0e35ed4cd892b8a75a5cec11978a09076311a3e4e2d4e9b4e89dc1",
+  "sourceFingerprint": "2431c694cab6d80e71c74ad304c309babc6413aa2c05928131db9e3be2db9b0c",
+  "status": "ready",
+  "totals": {
+    "aiDurationMs": "3500",
+    "approvalsRequested": 1,
+    "completedOutcomes": 3,
+    "estimatedValueMinor": "27500",
+    "exceptions": 1,
+    "manualMinutes": "165",
+    "netValueMinor": "2500",
+    "roiBasisPoints": "1000",
+    "serviceCostMinor": "25000",
+    "timeSavedMs": "9896500",
+    "unresolvedExceptions": 0,
+    "valueToCostBasisPoints": "11000"
+  }
+}

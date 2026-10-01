@@ -34,23 +34,25 @@ function compareEvidence(left: EvidenceEvent, right: EvidenceEvent): number {
 function selectedPolicy(
   policies: ValuePolicy[],
   accountId: string,
-  policyKey: string,
   occurredAt: string,
 ): ValuePolicy | undefined {
-  return policies
-    .filter(
-      (policy) =>
-        policy.policyKey === policyKey &&
-        Date.parse(policy.effectiveFrom) <= Date.parse(occurredAt) &&
-        (!policy.effectiveTo || Date.parse(occurredAt) < Date.parse(policy.effectiveTo)) &&
-        (policy.scope === "default" || policy.accountId === accountId),
-    )
-    .sort((left, right) => {
-      const scopeDifference = Number(right.scope === "account") - Number(left.scope === "account");
-      if (scopeDifference) return scopeDifference;
-      const effectiveDifference = Date.parse(right.effectiveFrom) - Date.parse(left.effectiveFrom);
-      return effectiveDifference || right.version - left.version;
-    })[0];
+  return policies.find(
+    (policy) =>
+      Date.parse(policy.effectiveFrom) <= Date.parse(occurredAt) &&
+      (!policy.effectiveTo || Date.parse(occurredAt) < Date.parse(policy.effectiveTo)) &&
+      (policy.scope === "default" || policy.accountId === accountId),
+  );
+}
+
+function comparePolicyPrecedence(left: ValuePolicy, right: ValuePolicy): number {
+  const scopeDifference = Number(right.scope === "account") - Number(left.scope === "account");
+  if (scopeDifference) return scopeDifference;
+  const effectiveDifference = Date.parse(right.effectiveFrom) - Date.parse(left.effectiveFrom);
+  return effectiveDifference || right.version - left.version;
+}
+
+function incrementCount(counts: Map<string, number>, key: string): void {
+  counts.set(key, (counts.get(key) ?? 0) + 1);
 }
 
 function localizedLabel(policy: ValuePolicy, locale: string): string {
@@ -112,63 +114,80 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
   const finishes = activeEvents.filter((event) => event.type === "attempt_finished");
   const outcomes = periodEvents.filter((event) => event.type === "outcome_completed");
   const exceptionEvents = periodEvents.filter((event) => event.type === "exception_recorded");
-  const uniqueOutcomes = outcomes.filter(
-    (event, index) => outcomes.findIndex((candidate) => candidate.outcomeId === event.outcomeId) === index,
-  );
-  for (const outcome of uniqueOutcomes) {
-    if (outcomes.filter((candidate) => candidate.outcomeId === outcome.outcomeId).length > 1) {
-      evidenceIssues.push(`Outcome ${outcome.outcomeId} was recorded more than once.`);
+  const startCountByAttemptId = new Map<string, number>();
+  const finishCountByAttemptId = new Map<string, number>();
+  const outcomeCountByAttemptId = new Map<string, number>();
+  const successfulFinishCountByIdentity = new Map<string, number>();
+  const exceptionAttemptIds = new Set(exceptionEvents.map((event) => event.attemptId));
+  for (const start of starts) incrementCount(startCountByAttemptId, start.attemptId);
+  for (const finish of finishes) {
+    incrementCount(finishCountByAttemptId, finish.attemptId);
+    if (finish.status === "succeeded") {
+      incrementCount(
+        successfulFinishCountByIdentity,
+        JSON.stringify([finish.attemptId, finish.workflowKey, finish.policyKey]),
+      );
     }
+  }
+  const outcomeCountById = new Map<string, number>();
+  const uniqueOutcomes = [] as typeof outcomes;
+  for (const outcome of outcomes) {
+    incrementCount(outcomeCountByAttemptId, outcome.attemptId);
+    const count = outcomeCountById.get(outcome.outcomeId) ?? 0;
+    outcomeCountById.set(outcome.outcomeId, count + 1);
+    if (count === 0) uniqueOutcomes.push(outcome);
+  }
+  for (const [outcomeId, count] of outcomeCountById) {
+    if (count > 1) evidenceIssues.push(`Outcome ${outcomeId} was recorded more than once.`);
   }
   const periodStarts = periodEvents.filter((event) => event.type === "attempt_started");
   const periodFinishes = periodEvents.filter((event) => event.type === "attempt_finished");
   for (const start of periodStarts) {
-    const matching = finishes.filter((finish) => finish.attemptId === start.attemptId);
-    if (matching.length === 0) evidenceIssues.push(`Attempt ${start.attemptId} has no measured finish event.`);
-    if (matching.length > 1) evidenceIssues.push(`Attempt ${start.attemptId} has multiple finish events.`);
+    const finishCount = finishCountByAttemptId.get(start.attemptId) ?? 0;
+    if (finishCount === 0) evidenceIssues.push(`Attempt ${start.attemptId} has no finish event.`);
+    if (finishCount > 1) evidenceIssues.push(`Attempt ${start.attemptId} has multiple finish events.`);
   }
   for (const finish of periodFinishes) {
-    const matchingStarts = starts.filter((start) => start.attemptId === finish.attemptId);
-    if (matchingStarts.length === 0) evidenceIssues.push(`Attempt ${finish.attemptId} has no start event.`);
-    if (matchingStarts.length > 1) evidenceIssues.push(`Attempt ${finish.attemptId} has multiple start events.`);
-    const attemptOutcomes = outcomes.filter((outcome) => outcome.attemptId === finish.attemptId);
-    if (finish.status === "succeeded" && attemptOutcomes.length !== 1) {
+    const startCount = startCountByAttemptId.get(finish.attemptId) ?? 0;
+    if (startCount === 0) evidenceIssues.push(`Attempt ${finish.attemptId} has no start event.`);
+    if (startCount > 1) evidenceIssues.push(`Attempt ${finish.attemptId} has multiple start events.`);
+    if (finish.status === "succeeded" && (outcomeCountByAttemptId.get(finish.attemptId) ?? 0) !== 1) {
       evidenceIssues.push(`Successful attempt ${finish.attemptId} must have one completed outcome.`);
     }
-    if (
-      finish.status !== "succeeded" &&
-      !exceptionEvents.some((event) => event.attemptId === finish.attemptId)
-    ) {
+    if (finish.status !== "succeeded" && !exceptionAttemptIds.has(finish.attemptId)) {
       evidenceIssues.push(`Unsuccessful attempt ${finish.attemptId} has no exception evidence.`);
     }
   }
-  const runtimeMeasurement =
-    periodStarts.every(
-      (start) => finishes.filter((finish) => finish.attemptId === start.attemptId).length === 1,
-    ) &&
-    periodFinishes.every(
-      (finish) => starts.filter((start) => start.attemptId === finish.attemptId).length === 1,
-    )
-      ? "measured"
-      : "partial";
+  const measuredFinishes = periodFinishes.filter((finish) => finish.activeDurationMs !== undefined);
+  const completeAttempts = periodStarts.every((start) => (finishCountByAttemptId.get(start.attemptId) ?? 0) === 1) &&
+    periodFinishes.every((finish) => (startCountByAttemptId.get(finish.attemptId) ?? 0) === 1)
+;
+  const runtimeMeasurement = measuredFinishes.length === 0
+    ? "not_provided"
+    : completeAttempts && measuredFinishes.length === periodFinishes.length
+      ? "measured" : "partial";
   const lineMap = new Map<string, ScorecardLineItem>();
+  const policiesByKey = new Map<string, ValuePolicy[]>();
+  for (const policy of parsed.policies) {
+    const candidates = policiesByKey.get(policy.policyKey) ?? [];
+    candidates.push(policy);
+    policiesByKey.set(policy.policyKey, candidates);
+  }
+  for (const candidates of policiesByKey.values()) candidates.sort(comparePolicyPrecedence);
 
   for (const outcome of uniqueOutcomes) {
-    const matchingFinishes = finishes.filter(
-      (finish) =>
-        finish.attemptId === outcome.attemptId &&
-        finish.status === "succeeded" &&
-        finish.workflowKey === outcome.workflowKey &&
-        finish.policyKey === outcome.policyKey,
-    );
-    if (matchingFinishes.length !== 1) {
-      evidenceIssues.push(`Outcome ${outcome.outcomeId} has no successful measured attempt.`);
+    const finishIdentity = JSON.stringify([
+      outcome.attemptId,
+      outcome.workflowKey,
+      outcome.policyKey,
+    ]);
+    if ((successfulFinishCountByIdentity.get(finishIdentity) ?? 0) !== 1) {
+      evidenceIssues.push(`Outcome ${outcome.outcomeId} has no successful completed attempt.`);
       continue;
     }
     const policy = selectedPolicy(
-      parsed.policies,
+      policiesByKey.get(outcome.policyKey) ?? [],
       parsed.accountId,
-      outcome.policyKey,
       outcome.occurredAt,
     );
     if (!policy) {
@@ -211,7 +230,7 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
   let aiDurationMs = 0n;
   for (const event of periodEvents) {
     if (event.type !== "attempt_finished") continue;
-    const duration = BigInt(event.activeDurationMs);
+    const duration = BigInt(event.activeDurationMs ?? 0);
     aiDurationMs += duration;
     const runtimeKey = `${event.workflowKey}\u0000${event.policyKey}`;
     attemptRuntimeByLine.set(
@@ -219,9 +238,22 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
       (attemptRuntimeByLine.get(runtimeKey) ?? 0n) + duration,
     );
   }
+  const runtimeStateByLine = new Map<string, { finishes: number; measured: number; complete: boolean }>();
+  for (const event of [...periodStarts, ...periodFinishes]) {
+    const key = `${event.workflowKey}\u0000${event.policyKey}`;
+    const state = runtimeStateByLine.get(key) ?? { finishes: 0, measured: 0, complete: true };
+    if (event.type === "attempt_finished") {
+      state.finishes++;
+      if (event.activeDurationMs !== undefined) state.measured++;
+      state.complete &&= startCountByAttemptId.get(event.attemptId) === 1;
+    } else state.complete &&= finishCountByAttemptId.get(event.attemptId) === 1;
+    runtimeStateByLine.set(key, state);
+  }
   for (const line of lineMap.values()) {
     const runtimeKey = `${line.workflowKey}\u0000${line.policyKey}`;
     line.aiDurationMs = (attemptRuntimeByLine.get(runtimeKey) ?? 0n).toString();
+    const state = runtimeStateByLine.get(runtimeKey);
+    line.runtimeMeasurement = !state?.measured ? "not_provided" : state.complete && state.measured === state.finishes ? "measured" : "partial";
   }
 
   const lineItems = [...lineMap.values()].sort((left, right) => {
@@ -243,11 +275,15 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
       .map((event) => event.exceptionId),
   );
   const resolutions = activeEvents.filter((event) => event.type === "resolution_recorded");
+  const resolutionCountByExceptionId = new Map<string, number>();
+  for (const resolution of resolutions) {
+    incrementCount(resolutionCountByExceptionId, resolution.exceptionId);
+  }
   for (const resolution of resolutions) {
     if (!allExceptionIds.has(resolution.exceptionId)) {
       evidenceIssues.push(`Resolution ${resolution.eventId} has no recorded exception.`);
     }
-    if (resolutions.filter((event) => event.exceptionId === resolution.exceptionId).length > 1) {
+    if ((resolutionCountByExceptionId.get(resolution.exceptionId) ?? 0) > 1) {
       evidenceIssues.push(`Exception ${resolution.exceptionId} has multiple resolutions.`);
     }
   }
@@ -276,6 +312,9 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
         : highest;
     }, undefined);
   const sourceFingerprint = sha256Canonical({
+    schemaVersion: SCHEMA_VERSION,
+    locale: parsed.locale,
+    generatedAt: parsed.generatedAt,
     accountId: parsed.accountId,
     events: sortedEvents,
     evidenceWatermark,
@@ -305,7 +344,7 @@ export function generateScorecard(input: unknown): ScorecardSnapshot {
       completedOutcomes,
       manualMinutes: manualMinutes.toString(),
       aiDurationMs: aiDurationMs.toString(),
-      timeSavedMs: (manualMinutes * 60_000n - aiDurationMs).toString(),
+      timeSavedMs: runtimeMeasurement === "measured" ? (manualMinutes * 60_000n - aiDurationMs).toString() : null,
       estimatedValueMinor: estimatedValue.toString(),
       ...costMetrics(estimatedValue, parsed.valuation.serviceCostMinor),
       exceptions: exceptionEvents.length,
@@ -364,6 +403,9 @@ export function estimateScorecard(input: unknown): ScorecardSnapshot {
         ? "not_provided"
         : "partial";
   const sourceFingerprint = sha256Canonical({
+    schemaVersion: SCHEMA_VERSION,
+    locale: parsed.locale,
+    generatedAt: parsed.generatedAt,
     accountId: parsed.accountId,
     mode: "illustrative",
     period: parsed.period,
@@ -387,7 +429,7 @@ export function estimateScorecard(input: unknown): ScorecardSnapshot {
       completedOutcomes,
       manualMinutes: manualMinutes.toString(),
       aiDurationMs: aiDurationMs.toString(),
-      timeSavedMs: (manualMinutes * 60_000n - aiDurationMs).toString(),
+      timeSavedMs: runtimeMeasurement === "measured" ? (manualMinutes * 60_000n - aiDurationMs).toString() : null,
       estimatedValueMinor: estimatedValue.toString(),
       ...costMetrics(estimatedValue, parsed.valuation.serviceCostMinor),
       exceptions: 0,

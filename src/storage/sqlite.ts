@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 
 import { canonicalJson } from "../canonical.js";
+import { evidencePayload } from "./identity.js";
 import {
   EvidenceEventSchema,
   ScorecardSnapshotSchema,
@@ -57,6 +58,7 @@ export class SqliteScorecardRepository implements ScorecardRepository {
   constructor(database: string | DatabaseSync = ":memory:") {
     this.#database = typeof database === "string" ? new DatabaseSync(database) : database;
     this.#ownsDatabase = typeof database === "string";
+    this.#database.exec("PRAGMA busy_timeout = 30000");
   }
 
   async migrate(): Promise<void> {
@@ -68,6 +70,14 @@ export class SqliteScorecardRepository implements ScorecardRepository {
   }
 
   async append(eventsInput: EvidenceEvent[]): Promise<StoredEvidenceEvent[]> {
+    return this.#append(eventsInput, false);
+  }
+
+  async appendIfAbsent(eventsInput: EvidenceEvent[]): Promise<StoredEvidenceEvent[]> {
+    return this.#append(eventsInput, true);
+  }
+
+  async #append(eventsInput: EvidenceEvent[], skipIdentical: boolean): Promise<StoredEvidenceEvent[]> {
     if (eventsInput.length === 0) return [];
     const events = eventsInput.map((event) => EvidenceEventSchema.parse(event));
     const accountId = events[0]?.accountId;
@@ -90,6 +100,13 @@ export class SqliteScorecardRepository implements ScorecardRepository {
       );
       const stored: StoredEvidenceEvent[] = [];
       for (const event of events) {
+        if (skipIdentical) {
+          const existing = this.#database.prepare("SELECT event_json FROM roi_evidence_events WHERE account_id = ? AND event_id = ?").get(accountId, event.eventId) as JsonRow | undefined;
+          if (existing) {
+            if (evidencePayload(EvidenceEventSchema.parse(JSON.parse(existing.event_json))) !== evidencePayload(event)) throw new Error("Conflicting evidence for an existing event ID");
+            continue;
+          }
+        }
         sequence += 1n;
         const sequenced = EvidenceEventSchema.parse({ ...event, sequence: sequence.toString() });
         insert.run(accountId, Number(sequence), event.eventId, canonicalJson(sequenced));

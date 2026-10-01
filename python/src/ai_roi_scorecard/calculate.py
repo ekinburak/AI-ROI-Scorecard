@@ -34,7 +34,8 @@ def _dump(value: Any) -> Any:
 
 
 def _instant(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return instant.replace(microsecond=(instant.microsecond // 1000) * 1000)
 
 
 def _compare_events(left: Any, right: Any) -> int:
@@ -50,25 +51,21 @@ def _compare_events(left: Any, right: Any) -> int:
 
 
 def _selected_policy(
-    policies: list[ValuePolicy], account_id: str, policy_key: str, occurred_at: str
+    policies: list[ValuePolicy], account_id: str, occurred_at: str
 ) -> ValuePolicy | None:
-    candidates = [
-        policy
-        for policy in policies
-        if policy.policy_key == policy_key
-        and _instant(policy.effective_from) <= _instant(occurred_at)
-        and (policy.effective_to is None or _instant(occurred_at) < _instant(policy.effective_to))
-        and (policy.scope == "default" or policy.account_id == account_id)
-    ]
-    candidates.sort(
-        key=lambda policy: (
-            policy.scope == "account",
-            _instant(policy.effective_from),
-            policy.version,
+    return next(
+        (
+            policy
+            for policy in policies
+            if _instant(policy.effective_from) <= _instant(occurred_at)
+            and (
+                policy.effective_to is None
+                or _instant(occurred_at) < _instant(policy.effective_to)
+            )
+            and (policy.scope == "default" or policy.account_id == account_id)
         ),
-        reverse=True,
+        None,
     )
-    return candidates[0] if candidates else None
 
 
 def _localized_label(policy: ValuePolicy, locale: str) -> str:
@@ -146,74 +143,81 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
     exception_events = [
         event for event in period_events if isinstance(event, ExceptionRecordedEvent)
     ]
+    start_count_by_attempt_id: defaultdict[str, int] = defaultdict(int)
+    finish_count_by_attempt_id: defaultdict[str, int] = defaultdict(int)
+    outcome_count_by_attempt_id: defaultdict[str, int] = defaultdict(int)
+    successful_finish_count_by_identity: defaultdict[tuple[str, str, str], int] = defaultdict(int)
+    exception_attempt_ids = {event.attempt_id for event in exception_events}
+    for start in starts:
+        start_count_by_attempt_id[start.attempt_id] += 1
+    for finish in finishes:
+        finish_count_by_attempt_id[finish.attempt_id] += 1
+        if finish.status == "succeeded":
+            successful_finish_count_by_identity[
+                (finish.attempt_id, finish.workflow_key, finish.policy_key)
+            ] += 1
     unique_outcomes: list[OutcomeCompletedEvent] = []
-    seen_outcomes: set[str] = set()
+    outcome_count_by_id: defaultdict[str, int] = defaultdict(int)
     for outcome in outcomes:
-        if outcome.outcome_id in seen_outcomes:
-            evidence_issues.append(
-                f"Outcome {outcome.outcome_id} was recorded more than once."
-            )
-            continue
-        seen_outcomes.add(outcome.outcome_id)
-        unique_outcomes.append(outcome)
+        outcome_count_by_attempt_id[outcome.attempt_id] += 1
+        outcome_count_by_id[outcome.outcome_id] += 1
+        if outcome_count_by_id[outcome.outcome_id] == 1:
+            unique_outcomes.append(outcome)
+    for outcome_id, count in outcome_count_by_id.items():
+        if count > 1:
+            evidence_issues.append(f"Outcome {outcome_id} was recorded more than once.")
 
     period_starts = [event for event in period_events if isinstance(event, AttemptStartedEvent)]
     period_finishes = [event for event in period_events if isinstance(event, AttemptFinishedEvent)]
     for start in period_starts:
-        matching = [finish for finish in finishes if finish.attempt_id == start.attempt_id]
-        if not matching:
-            evidence_issues.append(f"Attempt {start.attempt_id} has no measured finish event.")
-        if len(matching) > 1:
+        finish_count = finish_count_by_attempt_id[start.attempt_id]
+        if finish_count == 0:
+            evidence_issues.append(f"Attempt {start.attempt_id} has no finish event.")
+        if finish_count > 1:
             evidence_issues.append(f"Attempt {start.attempt_id} has multiple finish events.")
     for finish in period_finishes:
-        matching_starts = [start for start in starts if start.attempt_id == finish.attempt_id]
-        if not matching_starts:
+        start_count = start_count_by_attempt_id[finish.attempt_id]
+        if start_count == 0:
             evidence_issues.append(f"Attempt {finish.attempt_id} has no start event.")
-        if len(matching_starts) > 1:
+        if start_count > 1:
             evidence_issues.append(f"Attempt {finish.attempt_id} has multiple start events.")
-        attempt_outcomes = [
-            outcome for outcome in outcomes if outcome.attempt_id == finish.attempt_id
-        ]
-        if finish.status == "succeeded" and len(attempt_outcomes) != 1:
+        if finish.status == "succeeded" and outcome_count_by_attempt_id[finish.attempt_id] != 1:
             evidence_issues.append(
                 f"Successful attempt {finish.attempt_id} must have one completed outcome."
             )
-        if finish.status != "succeeded" and not any(
-            event.attempt_id == finish.attempt_id for event in exception_events
-        ):
+        if finish.status != "succeeded" and finish.attempt_id not in exception_attempt_ids:
             evidence_issues.append(
                 f"Unsuccessful attempt {finish.attempt_id} has no exception evidence."
             )
-    runtime_measurement = (
-        "measured"
-        if all(
-            sum(finish.attempt_id == start.attempt_id for finish in finishes) == 1
-            for start in period_starts
-        )
-        and all(
-            sum(start.attempt_id == finish.attempt_id for start in starts) == 1
-            for finish in period_finishes
-        )
-        else "partial"
+    complete_attempts = (
+        all(finish_count_by_attempt_id[start.attempt_id] == 1 for start in period_starts)
+        and all(start_count_by_attempt_id[finish.attempt_id] == 1 for finish in period_finishes)
     )
+    measured_finishes = [event for event in period_finishes if event.active_duration_ms is not None]
+    runtime_measurement = "not_provided" if not measured_finishes else "measured" if complete_attempts and len(measured_finishes) == len(period_finishes) else "partial"
 
     line_map: dict[str, dict[str, Any]] = {}
+    policies_by_key: defaultdict[str, list[ValuePolicy]] = defaultdict(list)
+    for candidate_policy in parsed.policies:
+        policies_by_key[candidate_policy.policy_key].append(candidate_policy)
+    for candidates in policies_by_key.values():
+        candidates.sort(
+            key=lambda policy: (
+                policy.scope == "account",
+                _instant(policy.effective_from),
+                policy.version,
+            ),
+            reverse=True,
+        )
     for outcome in unique_outcomes:
-        matching_finishes = [
-            finish
-            for finish in finishes
-            if finish.attempt_id == outcome.attempt_id
-            and finish.status == "succeeded"
-            and finish.workflow_key == outcome.workflow_key
-            and finish.policy_key == outcome.policy_key
-        ]
-        if len(matching_finishes) != 1:
+        finish_identity = (outcome.attempt_id, outcome.workflow_key, outcome.policy_key)
+        if successful_finish_count_by_identity[finish_identity] != 1:
             evidence_issues.append(
-                f"Outcome {outcome.outcome_id} has no successful measured attempt."
+                f"Outcome {outcome.outcome_id} has no successful completed attempt."
             )
             continue
         policy = _selected_policy(
-            parsed.policies, parsed.account_id, outcome.policy_key, outcome.occurred_at
+            policies_by_key[outcome.policy_key], parsed.account_id, outcome.occurred_at
         )
         if policy is None:
             evidence_issues.append(f"No effective value policy exists for {outcome.policy_key}.")
@@ -249,10 +253,23 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
     ai_duration_ms = 0
     for event in period_events:
         if isinstance(event, AttemptFinishedEvent):
-            ai_duration_ms += event.active_duration_ms
-            runtime_by_line[(event.workflow_key, event.policy_key)] += event.active_duration_ms
+            ai_duration_ms += event.active_duration_ms or 0
+            runtime_by_line[(event.workflow_key, event.policy_key)] += event.active_duration_ms or 0
+    runtime_state_by_line: dict[tuple[str, str], list[int | bool]] = {}
+    for runtime_event in [*period_starts, *period_finishes]:
+        runtime_key = (runtime_event.workflow_key, runtime_event.policy_key)
+        state = runtime_state_by_line.setdefault(runtime_key, [0, 0, True])
+        if isinstance(runtime_event, AttemptFinishedEvent):
+            state[0] += 1
+            state[1] += runtime_event.active_duration_ms is not None
+            state[2] = state[2] and start_count_by_attempt_id[runtime_event.attempt_id] == 1
+        else:
+            state[2] = state[2] and finish_count_by_attempt_id[runtime_event.attempt_id] == 1
     for line in line_map.values():
-        line["ai_duration_ms"] = runtime_by_line[(line["workflow_key"], line["policy_key"])]
+        runtime_key = (line["workflow_key"], line["policy_key"])
+        line["ai_duration_ms"] = runtime_by_line[runtime_key]
+        count, measured, complete = runtime_state_by_line.get(runtime_key, [0, 0, True])
+        line["runtime_measurement"] = "not_provided" if measured == 0 else "measured" if complete and measured == count else "partial"
 
     line_items = [
         ScorecardLineItem.model_validate(
@@ -275,14 +292,15 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
     resolutions = [
         event for event in active_events if isinstance(event, ResolutionRecordedEvent)
     ]
+    resolution_count_by_exception_id: defaultdict[str, int] = defaultdict(int)
+    for resolution in resolutions:
+        resolution_count_by_exception_id[resolution.exception_id] += 1
     for resolution in resolutions:
         if resolution.exception_id not in all_exception_ids:
             evidence_issues.append(
                 f"Resolution {resolution.event_id} has no recorded exception."
             )
-        if sum(
-            event.exception_id == resolution.exception_id for event in resolutions
-        ) > 1:
+        if resolution_count_by_exception_id[resolution.exception_id] > 1:
             evidence_issues.append(
                 f"Exception {resolution.exception_id} has multiple resolutions."
             )
@@ -307,6 +325,9 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
         evidence_watermark = str(max(sequences)) if sequences else None
     source_fingerprint = sha256_canonical(
         {
+            "schemaVersion": 2,
+            "locale": parsed.locale,
+            "generatedAt": parsed.generated_at,
             "accountId": parsed.account_id,
             "events": [_dump(event) for event in sorted_events],
             **(
@@ -334,7 +355,7 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
         "completed_outcomes": completed_outcomes,
         "manual_minutes": str(manual_minutes),
         "ai_duration_ms": str(ai_duration_ms),
-        "time_saved_ms": str(manual_minutes * 60_000 - ai_duration_ms),
+        "time_saved_ms": str(manual_minutes * 60_000 - ai_duration_ms) if runtime_measurement == "measured" else None,
         "estimated_value_minor": str(estimated_value),
         **_cost_metrics(estimated_value, parsed.valuation.service_cost_minor),
         "exceptions": len(exception_events),
@@ -343,7 +364,7 @@ def generate_scorecard(input_value: GenerationInput | dict[str, Any]) -> Scoreca
     }
     return _with_hash(
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "mode": "audited",
             "account_id": parsed.account_id,
             "locale": parsed.locale,
@@ -410,6 +431,9 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
         runtime_measurement = "partial"
     source_fingerprint = sha256_canonical(
         {
+            "schemaVersion": 2,
+            "locale": parsed.locale,
+            "generatedAt": parsed.generated_at,
             "accountId": parsed.account_id,
             "mode": "illustrative",
             "period": _dump(parsed.period),
@@ -422,7 +446,7 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
             "completed_outcomes": completed_outcomes,
             "manual_minutes": str(manual_minutes),
             "ai_duration_ms": str(ai_duration_ms),
-            "time_saved_ms": str(manual_minutes * 60_000 - ai_duration_ms),
+            "time_saved_ms": str(manual_minutes * 60_000 - ai_duration_ms) if runtime_measurement == "measured" else None,
             "estimated_value_minor": str(estimated_value),
             **_cost_metrics(estimated_value, parsed.valuation.service_cost_minor),
             "exceptions": 0,
@@ -432,7 +456,7 @@ def estimate_scorecard(input_value: EstimateInput | dict[str, Any]) -> Scorecard
     )
     return _with_hash(
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "mode": "illustrative",
             "account_id": parsed.account_id,
             "locale": parsed.locale,

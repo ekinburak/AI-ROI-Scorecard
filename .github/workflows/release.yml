@@ -6,40 +6,123 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+  actions: read
+
+concurrency:
+  group: scorecard-release
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  verified-artifacts:
     runs-on: ubuntu-latest
     environment: release
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          version: 10.33.0
+          node-version: 24
+      - name: Require this commit's full main CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "$GITHUB_REF_TYPE" = tag ]; then test "$GITHUB_REF_NAME" = "v$VERSION"; fi
+          test "$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq .sha)" = "$GITHUB_SHA"
+          RUN_ID=$(gh run list --workflow ci.yml --event push --commit "$GITHUB_SHA" --branch main --status success --json databaseId --jq '.[0].databaseId')
+          test -n "$RUN_ID"
+          test "$RUN_ID" != null
+          gh run download "$RUN_ID" --name release-packages --dir artifacts
+      - name: Scan the exact tested artifacts
+        env:
+          PRIVATE_BOUNDARY_TERMS: ${{ secrets.PRIVATE_BOUNDARY_TERMS }}
+        run: |
+          mkdir -p /tmp/npm-package /tmp/python-wheel /tmp/python-sdist npm python-artifacts
+          tar -xzf artifacts/*.tgz -C /tmp/npm-package
+          python -m zipfile -e artifacts/*.whl /tmp/python-wheel
+          tar -xzf artifacts/*.tar.gz -C /tmp/python-sdist
+          node scripts/check-public-boundary.mjs --require-private-terms /tmp/npm-package /tmp/python-wheel /tmp/python-sdist
+          sha256sum artifacts/*
+          cp artifacts/*.tgz npm/
+          cp artifacts/*.whl artifacts/*.tar.gz python-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-npm
+          path: npm/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-python
+          path: python-artifacts/
+
+  npm:
+    needs: verified-artifacts
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: pnpm
-      - uses: astral-sh/setup-uv@v6
+      - run: npm install --global npm@11
+      - uses: actions/download-artifact@v4
         with:
-          python-version: "3.11"
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: |
-          VERSION=$(node -p "require('./package.json').version")
-          test "${GITHUB_REF_NAME:-v$VERSION}" = "v$VERSION"
-      - run: pnpm pack --pack-destination artifacts
-      - working-directory: python
-        run: uv build --out-dir ../artifacts
-      - run: npm publish artifacts/*.tgz --access public --provenance
+          name: verified-npm
+          path: artifacts
+      - id: published
+        run: node scripts/verify-published.mjs npm artifacts
+      - if: steps.published.outputs.state == 'new'
+        run: npm publish artifacts/*.tgz --access public --provenance
+      - run: node scripts/verify-published.mjs npm artifacts matching
+
+  pypi:
+    needs: verified-artifacts
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-python
+          path: artifacts
+      - id: published
+        run: node scripts/verify-published.mjs pypi artifacts
       - uses: pypa/gh-action-pypi-publish@release/v1
+        if: steps.published.outputs.state != 'matching'
         with:
           packages-dir: artifacts/
+          # Existing files have already been verified byte-for-byte above.
+          skip-existing: true
           attestations: true
+      - run: node scripts/verify-published.mjs pypi artifacts matching
+
+  release:
+    needs: [npm, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verified-*
+          path: artifacts
+          merge-multiple: true
+      - id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: artifacts/*

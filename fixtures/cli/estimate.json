@@ -1,0 +1,21 @@
+{
+  "period": {
+    "start": "2026-08-21T00:00:00.000Z",
+    "end": "2026-08-28T00:00:00.000Z"
+  },
+  "generatedAt": "2026-08-28T08:00:00.000Z",
+  "valuation": {
+    "currency": "USD",
+    "currencyMinorUnitScale": 2,
+    "hourlyValueMinor": "10000",
+    "serviceCostMinor": "25000"
+  },
+  "workflows": [
+    {
+      "workflowKey": "ticket-triage",
+      "label": "Ticket triage",
+      "units": 1,
+      "manualMinutes": 45
+    }
+  ]
+}

@@ -18,7 +18,7 @@ An append call must contain events for exactly one account and commits atomicall
 
 ## TypeScript
 
-SQLite uses the Node.js 22+ `node:sqlite` module:
+SQLite uses the Node.js 22.13+ `node:sqlite` module:
 
 ```ts
 import { SqliteScorecardRepository } from "ai-roi-scorecard/storage/sqlite";
@@ -57,3 +57,11 @@ repository.migrate()
 
 The generic tables are prefixed with `roi_`. A host with an existing ledger may implement the
 repository protocols instead of using these tables.
+
+## Atomic replay ingestion
+
+`append` is strict: duplicate event IDs fail. `appendIfAbsent` / `append_if_absent` skips
+identical payloads (ignoring assigned sequence), including duplicates in one batch and
+concurrent replay. Conflicting payloads roll back the entire batch without advancing its cursor.
+Built-in adapters serialize account writers; SQLite waits up to 30 seconds for a write lock.
+Custom repositories lacking this capability require a single ingestion writer.
