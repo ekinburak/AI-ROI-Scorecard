@@ -9,17 +9,17 @@ public release. Adapter scope remains in [adapters-checklist.md](adapters-checkl
 | Implemented | npm and Python 0.2.0 metadata and matching CLIs | `src/cli.ts`, Python `cli.py`, shared `fixtures/cli`, `scripts/smoke-packages.mjs`. |
 | Locally tested | Schema v2, v1 preservation, missing/zero/mixed runtime | Shared v1/v2 golden fixtures and both readiness suites. |
 | Locally tested | Atomic replay, same-batch duplicates, conflict rollback | SQLite readiness tests and real PostgreSQL 17 concurrency tests passed in both languages on 2026-10-01. |
-| Implemented | Fresh package installations, ESM/CJS and CLI parity | Mandatory installed-artifact smoke script in CI; record current commit's completed run below. |
+| Passed | Fresh package installations, ESM/CJS and CLI parity | [Final SDK CI](https://github.com/ekinburak/AI-ROI-Scorecard/actions/runs/36835063785) passed the installed-artifact contracts on main. |
 | Implemented | Copyable brownfield CLI walkthrough | [cli.md](cli.md), OTLP plus JSON/mapping/policy/report fixtures. |
 | Implemented | Trusted private-content scans | PR jobs never receive owner terms; trusted main/release jobs require scans of exact artifacts. |
 | Implemented | Publication requires same commit's full CI | `release.yml` requires successful main CI, including PostgreSQL and installed packages; downloads its artifacts. |
 | Implemented | Safe publication retry | Registry files and checksums verified before reuse; mismatches fail. |
-| Passed for initial implementation; final follow-up pending | Full CI matrix and trusted artifact scan | Main commit `398d54a15bf455553e58a14bfe899bec8c9b598a` passed [CI 36833208423](https://github.com/ekinburak/AI-ROI-Scorecard/actions/runs/36833208423), including PostgreSQL, installed packages, and trusted scans. Final release-smoke/input follow-up requires its own main CI. |
+| Passed | Full CI matrix and trusted artifact scan | Main commit `94b1673905896d078191b0b9d843d52a6dd15153` passed [CI 36835063785](https://github.com/ekinburak/AI-ROI-Scorecard/actions/runs/36835063785): Node 22/24/26, Python 3.11–3.14, PostgreSQL, installed packages, and mandatory trusted scans. Publication requires the exact SHA being released to pass main CI. |
 | Waiting — external | npm first publication and trusted publisher | Authenticate npm bootstrap of verified tarball if needed; configure repo `ekinburak/AI-ROI-Scorecard`, `release.yml`, environment `release`. |
 | Waiting — external | PyPI pending publisher | Owner must register project `ai-roi-scorecard`, same GitHub repo/workflow/environment. |
 | Implemented; live run waiting | Public install smoke tests | Release `public-smoke` installs exact 0.2.0 from npm/PyPI and reruns shared CLI contracts before creating the GitHub release. |
 | Waiting | Website registry dependency | After npm publication, replace vendored preview archive with exact registry version `0.2.0`. |
-| Waiting | Website current CI and browser tests | Calculator, hydration, downloads, mobile layout, CLI documentation must pass on deployed commit. |
+| Passed | Website main CI and browser tests | Commit `97449fe0a5a947e3dff6c869e8c4e23c00aa0ffb` passed [CI 36835301190](https://github.com/ekinburak/AI-ROI-Scorecard-Website/actions/runs/36835301190), including trusted output scans. Registry replacement requires a new full run before deployment. |
 | Waiting — external | Cloudflare Pages credentials | Website repo needs `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; then deploy exact validated output and record live smoke evidence. |
 
 ## Release account configuration
@@ -52,3 +52,24 @@ host responsibilities. The CLI intentionally uses SQLite; SDK PostgreSQL support
   dashboard hydration, schema-v2 downloads, copy buttons, CLI fixtures, and mobile documentation.
 - Owner-term scans require the repository secret and are verified by trusted CI, not this local
   run. Public registry installations and live deployment remain waiting.
+
+
+## Tested CI artifact record
+
+Artifacts from SDK CI `36835063785` (code commit `94b1673`), all SHA-256:
+
+| File | Digest |
+| --- | --- |
+| `ai-roi-scorecard-0.2.0.tgz` | `94e18ec8c117ac2d58d47de53c38e1b1a159fc19d5d65be805f1c46101da293e` |
+| `ai_roi_scorecard-0.2.0-py3-none-any.whl` | `62a58f8f25fa332b69e77ca92358829a51488cbf800ede2995b9575fb3bd99cf` |
+| `ai_roi_scorecard-0.2.0.tar.gz` | `eb6b8ab30aa1010b8f5fdc56926751ddebd3c84decc8b504990d50b460af0037` |
+
+On 2026-10-01 both registry version lookups returned absent. Local npm sign-in was unavailable;
+the website repository contained neither Cloudflare deployment secret. PyPI pending-publisher
+configuration remains unverified until owner setup and a successful OIDC publication. The website
+keeps its preview archive until npm publication, and the deployment gate refuses that dependency.
+Account actions are required to finish the live acceptance criteria.
+
+This ledger records completed runs rather than claiming that a later documentation commit was
+already tested. The release workflow always fetches the exact successful main-CI artifacts for
+its own commit; refresh these digests if the final artifacts differ.
