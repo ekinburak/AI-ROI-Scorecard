@@ -49,10 +49,18 @@ async function readJson(path: string): Promise<unknown> {
     const handle = await import("node:fs/promises").then(({open}) => open(path));
     try {
       if ((await handle.stat()).size > MAX_INPUT_BYTES) throw new RangeError("Input exceeds 16 MiB");
-      data = await handle.readFile();
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const chunk of handle.createReadStream({ autoClose: false })) {
+        const bytes = Buffer.from(chunk);
+        size += bytes.length;
+        if (size > MAX_INPUT_BYTES) throw new RangeError("Input exceeds 16 MiB");
+        chunks.push(bytes);
+      }
+      data = Buffer.concat(chunks);
     } finally { await handle.close(); }
   }
-  return JSON.parse(data.toString("utf8"));
+  return JSON.parse(new TextDecoder("utf8", {fatal:true}).decode(data));
 }
 
 function mapping(config: z.infer<typeof MappingSchema>, accountId: string, mode: "span" | "omit"): TelemetryMapping {

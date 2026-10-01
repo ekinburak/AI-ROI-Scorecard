@@ -14,10 +14,10 @@ public release. Adapter scope remains in [adapters-checklist.md](adapters-checkl
 | Implemented | Trusted private-content scans | PR jobs never receive owner terms; trusted main/release jobs require scans of exact artifacts. |
 | Implemented | Publication requires same commit's full CI | `release.yml` requires successful main CI, including PostgreSQL and installed packages; downloads its artifacts. |
 | Implemented | Safe publication retry | Registry files and checksums verified before reuse; mismatches fail. |
-| Waiting | Current commit's full CI matrix | Commit, push, then record successful run and artifact digests. Older main CI does not certify these changes. |
+| Passed for initial implementation; final follow-up pending | Full CI matrix and trusted artifact scan | Main commit `398d54a15bf455553e58a14bfe899bec8c9b598a` passed [CI 36833208423](https://github.com/ekinburak/AI-ROI-Scorecard/actions/runs/36833208423), including PostgreSQL, installed packages, and trusted scans. Final release-smoke/input follow-up requires its own main CI. |
 | Waiting — external | npm first publication and trusted publisher | Authenticate npm bootstrap of verified tarball if needed; configure repo `ekinburak/AI-ROI-Scorecard`, `release.yml`, environment `release`. |
 | Waiting — external | PyPI pending publisher | Owner must register project `ai-roi-scorecard`, same GitHub repo/workflow/environment. |
-| Waiting | Public install smoke tests | Install exact 0.2.0 from npm/PyPI; rerun documented commands and compare hashes. |
+| Implemented; live run waiting | Public install smoke tests | Release `public-smoke` installs exact 0.2.0 from npm/PyPI and reruns shared CLI contracts before creating the GitHub release. |
 | Waiting | Website registry dependency | After npm publication, replace vendored preview archive with exact registry version `0.2.0`. |
 | Waiting | Website current CI and browser tests | Calculator, hydration, downloads, mobile layout, CLI documentation must pass on deployed commit. |
 | Waiting — external | Cloudflare Pages credentials | Website repo needs `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; then deploy exact validated output and record live smoke evidence. |
